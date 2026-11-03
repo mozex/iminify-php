@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <linearGradient id="iminify-php-tile" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#18181b"/>
+      <stop offset="1" stop-color="#09090b"/>
+    </linearGradient>
+    <radialGradient id="iminify-php-glow" cx="256" cy="232" r="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#10b981" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="iminify-php-edge" x1="96" y1="0" x2="416" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#34d399" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#34d399" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#34d399" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="iminify-php-glyph" x1="0" y1="96" x2="0" y2="416" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#34d399"/>
+      <stop offset="1" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#iminify-php-tile)"/>
+  <rect width="512" height="512" rx="96" fill="url(#iminify-php-glow)"/>
+  <rect x="2" y="2" width="508" height="508" rx="94" stroke="#27272a" stroke-width="4"/>
+  <path d="M96 3H416" stroke="url(#iminify-php-edge)" stroke-width="2"/>
+  <rect x="168" y="152" width="176" height="208" rx="32" fill="url(#iminify-php-glyph)"/>
+  <circle cx="224" cy="212" r="22" fill="#0c0c0e"/>
+  <path d="M188 330L238 268L272 306L296 278L324 330Z" fill="#0c0c0e"/>
+  <path d="M92 196L140 256L92 316M420 196L372 256L420 316" stroke="#6ee7b7" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
