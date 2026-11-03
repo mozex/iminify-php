@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Psr7\FnStream;
 use GuzzleHttp\Psr7\HttpFactory;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Utils;
 use Mozex\Iminify\Client;
 use Mozex\Iminify\Exceptions\AccessDeniedException;
 use Mozex\Iminify\Exceptions\ApiException;
@@ -24,6 +26,7 @@ use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Exceptions\ValidationException;
 use Mozex\Iminify\Factory;
 use Mozex\Iminify\Http\ApiRequest;
+use Mozex\Iminify\Http\ApiResponse;
 use Mozex\Iminify\Http\Upload;
 use Mozex\Iminify\Iminify;
 use Mozex\Iminify\Support\ClientIdentifier;
@@ -304,6 +307,18 @@ describe('a successful answer', function () {
         ['<html>', "isn't a JSON object"],
         ['"text"', "isn't a JSON object"],
         ['{"message":"no data"}', 'without the `data` key'],
+    ]);
+});
+
+describe('an answer that streams', function () {
+    it('ends a connection lost mid-answer in its own exception, on a record and on a refusal', function (int $status) {
+        $body = FnStream::decorate(Utils::streamFor('{}'), ['__toString' => fn (): string => throw new RuntimeException('Connection lost')]);
+        $response = new ApiResponse($status, [], $body);
+
+        expect(fn () => $status >= 400 ? $response->successful() : $response->json())->toThrow(TransportException::class, 'Connection lost');
+    })->with([
+        'a record' => [200],
+        'a refusal' => [500],
     ]);
 });
 

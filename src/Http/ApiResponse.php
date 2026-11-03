@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace Mozex\Iminify\Http;
 
+use ErrorException;
 use JsonException;
 use Mozex\Iminify\Exceptions\ApiException;
+use Mozex\Iminify\Exceptions\TransportException;
 use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Responses\RateLimit;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamInterface;
+use RuntimeException;
 
 class ApiResponse
 {
@@ -52,6 +55,21 @@ class ApiResponse
         return $this;
     }
 
+    /**
+     * The whole body. A streaming client reads it only now, long after the call returned, so a
+     * connection lost mid-answer has to end in this package's exception here.
+     *
+     * @throws TransportException
+     */
+    public function contents(): string
+    {
+        try {
+            return (string) $this->body;
+        } catch (RuntimeException|ErrorException $exception) {
+            throw new TransportException("The answer broke off: {$exception->getMessage()}", 0, $exception);
+        }
+    }
+
     public function header(string $name): ?string
     {
         return $this->headers[strtolower($name)] ?? null;
@@ -68,7 +86,7 @@ class ApiResponse
     public function json(): array
     {
         try {
-            $body = json_decode((string) $this->body, true, 512, JSON_THROW_ON_ERROR);
+            $body = json_decode($this->contents(), true, 512, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             throw UnexpectedResponseException::notJson($this->status);
         }

@@ -60,7 +60,7 @@ class ApiException extends IminifyException
     protected static function body(ApiResponse $response): array
     {
         try {
-            $body = json_decode((string) $response->body, true, 32, JSON_THROW_ON_ERROR);
+            $body = json_decode($response->contents(), true, 32, JSON_THROW_ON_ERROR);
         } catch (JsonException) {
             return [];
         }
