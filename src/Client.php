@@ -7,8 +7,10 @@ namespace Mozex\Iminify;
 use Closure;
 use Mozex\Iminify\Contracts\TransporterContract;
 use Mozex\Iminify\Resources\Account;
+use Mozex\Iminify\Resources\Crawls;
 use Mozex\Iminify\Resources\Groups;
 use Mozex\Iminify\Resources\Images;
+use Mozex\Iminify\Resources\Monitors;
 use Mozex\Iminify\Resources\Scans;
 
 class Client
@@ -34,6 +36,16 @@ class Client
     public function scans(): Scans
     {
         return new Scans($this->transporter, $this->sleep);
+    }
+
+    public function crawls(): Crawls
+    {
+        return new Crawls($this->transporter, $this->sleep);
+    }
+
+    public function monitors(): Monitors
+    {
+        return new Monitors($this->transporter, $this->sleep);
     }
 
     public function account(): Account
