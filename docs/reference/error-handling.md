@@ -31,7 +31,7 @@ try {
     $exception->errorCode;     // validation_failed
     $exception->getMessage();  // words meant for a person
     $exception->errors;        // on a validation failure, each field's messages
-    $exception->retryAfter;    // the answer's Retry-After, in seconds
+    $exception->retryAfter;    // the response's Retry-After, in seconds
 }
 ```
 
@@ -41,15 +41,15 @@ Three exceptions don't come from a refusal:
 
 | Exception | When |
 |---|---|
-| `TransportException` | Iminify couldn't be reached, a request timed out, or a download broke off |
-| `UnexpectedResponseException` | The answer isn't one the API gives: a redirect, a proxy's error page, or a body that doesn't read as expected |
+| `TransportException` | Iminify couldn't be reached, a request timed out, a response broke off, or a file to upload broke off or changed while being read |
+| `UnexpectedResponseException` | The response isn't one the API gives: a redirect, a proxy's error page, or a body that doesn't read as expected |
 | `WaitTimeoutException` | `wait()` ran out of time. `$last` holds the record as last read |
 
 `InvalidWebhookSignatureException` comes from [verifying a webhook](../usage/webhooks.md).
 
 ## Rate limits
 
-`wait()` honours a short rate limit by itself. Other calls throw `RateLimitedException`, and how long to wait is in `$retryAfter`:
+`wait()` waits out a short rate limit by itself. Other calls throw `RateLimitedException`, and how long to wait is in `$retryAfter`:
 
 ```php
 use Mozex\Iminify\Exceptions\DailyLimitReachedException;
@@ -65,7 +65,7 @@ try {
 }
 ```
 
-Every record and list you get back says how you stand from the limit headers of its answer:
+A record you asked for, or a page of a list, says how you stand from the limit headers of its response:
 
 ```php
 $image->rateLimit->limit;
@@ -74,4 +74,4 @@ $image->rateLimit->remaining;
 
 ## A status this client doesn't know
 
-Statuses are enums with an `Unknown` case for a value that arrived after this version was released. It doesn't throw: `ImageStatus::Unknown` counts as finished, so a `wait()` ends rather than running out its time, and `toArray()` hands you the answer as it was sent.
+Statuses are enums with an `Unknown` case for a value that arrived after this version was released. It doesn't throw: `ImageStatus::Unknown` counts as finished, so a `wait()` ends rather than running out its time, and `toArray()` hands you the response as it was sent.

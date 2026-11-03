@@ -16,7 +16,7 @@ $crawl = $client->crawls()->fromPages([
 ]);
 ```
 
-A crawl takes minutes rather than seconds, so its `wait()` defaults to 900 seconds where the others take 300.
+A crawl takes minutes rather than seconds, so its `wait()` defaults to 900 seconds where the others take 300, and `$crawl->isFinished()` says whether it's done.
 
 ```php
 $crawl = $client->crawls()->wait($crawl);

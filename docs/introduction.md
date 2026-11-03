@@ -7,15 +7,13 @@ Iminify PHP is the PHP client for the [Iminify](https://www.iminify.com) image o
 
 ## What you get
 
-**Waiting is built in.** The API works in the background, so every long-running record has a `wait()` that backs off between reads, honours `Retry-After` when you're rate limited, and stops at the timeout you give it.
+The API works in the background, so every long-running record has a `wait()` that backs off between reads, waits out a short rate limit and stops at the timeout you give it.
 
-**A typed exception per refusal.** A spent daily allowance throws `DailyLimitReachedException`, a short rate limit `RateLimitedException` with its `$retryAfter`, a bad field `ValidationException` with its `$errors`. Every one carries the API's own error code.
+A refusal throws its own exception. A spent daily allowance throws `DailyLimitReachedException`, a short rate limit `RateLimitedException` with its `$retryAfter`, a bad field `ValidationException` with its `$errors`, and every one carries the API's error code.
 
-**Uploads and downloads that don't fill your memory.** A file goes up through a temporary stream and comes down the same way. A saved file lands in one step, so a broken transfer leaves whatever was at the path untouched.
+A file goes up through a temporary stream and comes down the same way, so a large one doesn't have to fit in memory. A saved file lands in one step, so a broken transfer leaves whatever was at the path untouched.
 
-**A fake for your own tests.** `FakeClient` answers from a queue through the real resources, so your code reads the same objects and catches the same exceptions as it does in production.
-
-**Any HTTP client.** It's built on PSR-18, so it uses Guzzle, Symfony's client or whatever your project already has.
+For your own tests, `FakeClient` answers from a queue through the real resources, so your code reads the same objects and catches the same exceptions as it does in production. The client is built on PSR-18, so it uses Guzzle, Symfony's client or whatever your project already has.
 
 ## Installation
 
@@ -40,7 +38,7 @@ use Mozex\Iminify\Iminify;
 
 $client = Iminify::factory()
     ->withApiKey(getenv('IMINIFY_API_KEY'))
-    ->withTimeout(60)
+    ->withTimeout(300)
     ->make();
 
 $image = $client->images()->upload('photos/team.jpg', ['format' => 'webp']);

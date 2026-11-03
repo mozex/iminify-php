@@ -58,4 +58,4 @@ $client->groups()->delete($group);
 
 `wait()` reads only while the group is `in_progress`, so on a group still waiting for its image it returns at once: nothing but `sendSource()` moves it on.
 
-The zip holds every output marked `replace`, meaning smaller than the size you told it you already have, with a `manifest.csv` of every output. `$group->isFinished()` says whether it's done, and `$client->groups()->get($id)` reads one by its id.
+The zip holds every output marked `replace`, meaning smaller than the size you told it you already have, with a `manifest.csv` of every output. `$group->isInProgress()` and `$group->isFinished()` say where it stands, and `$client->groups()->get($id)` reads one by its id.

@@ -5,7 +5,7 @@ weight: 7
 
 Webhooks come with a paid plan and are set up on the website, under Settings, Webhooks: Iminify sends a signed request to your address when an image or a page scan finishes, so you don't have to poll. `WebhookVerifier` checks that a request came from Iminify and reads its event.
 
-Hand it the raw request body, before any JSON parsing changes it, and the `Iminify-Signature` header:
+Hand it the raw request body, before any JSON parsing changes it, and the `Iminify-Signature` header, whose name is in `WebhookVerifier::HEADER`:
 
 ```php
 use Mozex\Iminify\Enums\WebhookEventType;
@@ -29,7 +29,7 @@ if ($event->type === WebhookEventType::ImageCompleted) {
 
 The secret is the whole value Settings shows when you save the address, with its `whsec_`. A request whose time is more than five minutes from your server's clock is refused, which stops an old request being replayed. The second constructor argument changes that tolerance, in seconds.
 
-`$event->type` is a `WebhookEventType`: `ImageCompleted`, `ImageFailed`, `ImageResponsiveFinished`, `ScanCompleted`, `ScanFailed` or `Ping`, or `Unknown` for an event this version doesn't know yet. `$event->image()` and `$event->scan()` read the record it carries, and `$event->data` has it as sent. `$event->id` stays the same when a failed send is sent again, so you can skip an event you've already handled.
+`$event->type` is a `WebhookEventType`: `ImageCompleted`, `ImageFailed`, `ImageResponsiveFinished`, `ScanCompleted`, `ScanFailed` or `Ping`, or `Unknown` for an event this version doesn't know yet. `$event->image()` and `$event->scan()` read the record it carries, `$event->data` has it as sent, and `$event->toArray()` has the whole event. `$event->id` stays the same when a failed send is sent again, so you can skip an event you've already handled.
 
 To answer the request yourself rather than catching, use `isValid()`:
 

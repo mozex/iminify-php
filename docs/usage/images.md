@@ -14,7 +14,7 @@ $image = $client->images()->upload('photos/team.jpg');
 $image = $client->images()->fromUrl('https://example.com/team.jpg');
 ```
 
-An open stream or a PSR-7 stream works too, and needs a name, since the API reads the file's extension from it. Use `Upload::fromContents()` for bytes you already hold in memory:
+An open stream or a PSR-7 stream works too, and needs a name, since the API reads the file's extension from it. Use `Upload::fromContents()` for bytes you already hold in memory, and `Upload::fromPath()` or `Upload::fromStream()` when you want the `Upload` itself:
 
 ```php
 use Mozex\Iminify\Http\Upload;
@@ -58,7 +58,7 @@ The API's [compression settings guide](https://www.iminify.com/docs/compression-
 
 ## Waiting for the result
 
-An upload answers at once, with the image `queued`. `wait()` reads it until it has finished, whether it completed, failed or was cancelled, and returns it. It backs off from one second to five between reads and honours `Retry-After` when you're rate limited.
+An upload returns at once, with the image `queued`. `wait()` reads it until it has finished, whether it completed, failed or was cancelled, and returns it. It backs off from one second to five between reads and waits out `Retry-After` when you're rate limited.
 
 ```php
 $image = $client->images()->wait($image, timeout: 120);
@@ -93,10 +93,12 @@ $image->optimized?->size;
 $image->optimized?->format;    // jpg, webp, ...
 $image->savedBytes;
 $image->savedPercent;
+$image->sizeLimitStatus;        // under, resized or over, when you sent a size_limit
+$image->contentCredentials?->status;
 $image->altText?->text;
 $image->altText?->suggestedName;
 $image->responsive?->html;     // the <img srcset> to copy
-$image->toArray();             // the answer as the API sent it
+$image->toArray();             // the response as the API sent it
 ```
 
 `AlreadyOptimized` means Iminify couldn't make the file smaller and hands the upload back, so `hasResult()` is true and the download is your own file.
@@ -117,7 +119,7 @@ $download->mimeType;
 $download->size;
 ```
 
-Pass `DownloadType::Original` as the second argument to `download()` to get the file you sent back. `saveTo()` fails rather than saving a short file, and takes the size to hold it to as its second argument, such as `$image->optimized->size`, for an answer that doesn't state its length.
+Pass `DownloadType::Original` as the second argument to `download()` to get the file you sent back. `saveTo()` fails rather than saving a short file, and takes the size to hold it to as its second argument, such as `$image->optimized->size`, for a response that doesn't state its length. Its third argument is a closure given the finished temporary file's path before anything is replaced, which throws to keep what's at the path. It follows a link, and a file it replaces keeps its permissions but belongs from then on to the user PHP runs as.
 
 For a responsive set, `downloadResponsive($image, 640)` gets one width and `downloadResponsiveZip($image)` gets them all. `downloadMany([$first, $second])` gets several images' optimized copies as one zip.
 
@@ -139,7 +141,7 @@ do {
 } while ($page !== null);
 ```
 
-`list()` also takes `source` and `scan`, and the page has `$total`, `$currentPage` and `$lastPage`.
+`list()` also takes `source` and `scan`. The page has `$items`, `$total`, `$perPage`, `$currentPage` and `$lastPage`, and `toArray()` gives the response as sent.
 
 ## Everything else
 
@@ -158,7 +160,7 @@ $client->images()->delete($image);
 
 ## Deleting images once saved
 
-An image stays on your account until you delete it. A program that keeps its own copy of every result can send `ephemeral` with the upload, then delete the image once it has written the file. Anything you leave is deleted for you a while after it finishes.
+An image stays on your account until you delete it. A program that keeps its own copy of every result can send `ephemeral` with the upload, then delete the image once it has written the file. Anything you leave is [deleted for you](https://www.iminify.com/docs/images#deleting-images-once-saved) some hours after it finishes.
 
 ```php
 $image = $client->images()->upload('photos/team.jpg', ['ephemeral' => true]);

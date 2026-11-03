@@ -28,7 +28,7 @@ Don't build it with `OptimizerChainFactory::create([IminifyOptimizer::class => [
 
 ## With spatie/image and Browsershot
 
-Both take a chain:
+Both take a chain, and Browsershot needs `spatie/image` installed to use it:
 
 ```php
 use Spatie\Browsershot\Browsershot;
@@ -46,17 +46,21 @@ Calling `optimize()` with no chain runs the default command-line tools.
 | Option | What it does |
 |---|---|
 | `api_key` | Your API key |
-| `timeout` | The seconds one file may take, the whole way round. 120 by default. The chain's own `setTimeout()` doesn't reach an optimizer like this one |
+| `timeout` | How long it waits for a file to be compressed, and the limit on each request to Iminify, in seconds up to a day. 120 by default. Each request has its own limit, so if every one stalled a file could take about four times this. The chain's own `setTimeout()` doesn't reach an optimizer like this one |
 | `level` | The [compression level](../usage/images.md#options). `smart` by default |
 | `keep_metadata` | Keep the file's metadata, which is stripped by default |
 
 ## What it does to a file
 
-It takes JPEG, PNG, WebP and GIF files, read by what the file is rather than by its name, so a temporary upload with no extension works. Each comes back in its own format, an animated GIF still animated. It leaves AVIF, SVG, HEIC and TIFF to whatever else is in the chain, since Iminify doesn't read the first two and always turns the others into another format. A chain can hold `Avifenc` and `Svgo` beside it. Leave out `Jpegoptim`, `Pngquant`, `Optipng`, `Gifsicle` and `Cwebp`, or the same file goes through both.
+It takes JPEG, PNG, WebP and GIF files, read by what the file is rather than by its name, so a temporary upload with no extension works. Each comes back in its own format, an animated GIF still animated. It leaves AVIF, SVG, HEIC and TIFF to whatever else is in the chain, since Iminify doesn't read the first two and always turns the others into another format.
 
-It sends the file with alt text off, then writes the result back only if it completed, kept its format and came out smaller, and only if the API received the whole file and yours hasn't changed since. Each file counts as one image against your daily and per-minute limits. A file Iminify can't shrink stays as it is.
+A chain can hold `Avifenc` and `Svgo` beside it. Leave out `Jpegoptim`, `Pngquant`, `Optipng`, `Gifsicle` and `Cwebp`, or the same file goes through both.
 
-The image doesn't stay on your account. It's sent as `ephemeral` and deleted once the file is written, and an image the optimizer couldn't delete, such as one still being compressed at the deadline, goes by itself a while after it finishes.
+It sends the file with alt text off, then writes the result back only if it completed, kept its format and came out smaller, only if what arrived is an image of that type, and only if the API received the whole file and yours hasn't changed since. Each file counts as one image against your daily and per-minute limits. A file Iminify can't shrink stays as it is.
+
+The new copy replaces the file in one step, so it keeps the file's permissions but belongs from then on to the user PHP runs as.
+
+The image doesn't stay on your account. It's sent as `ephemeral` and deleted once the file is written, and Iminify [deletes one the optimizer couldn't](https://www.iminify.com/docs/images#deleting-images-once-saved), such as one still being compressed at the deadline, on its own schedule.
 
 ## When something goes wrong
 
@@ -72,9 +76,9 @@ $chain = (new OptimizerChain)
     ->addOptimizer(new IminifyOptimizer(['api_key' => $key]));
 ```
 
-A short rate limit is waited out if it fits inside `timeout`. A spent daily allowance fails at once, because it can last hours.
+A short rate limit, on the upload or the download, is waited out if it fits inside `timeout`. A spent daily allowance fails at once, because it can last hours.
 
-A chain runs synchronously, so whatever calls it waits for the whole round trip: seconds for most files, and up to `timeout` when the queue is busy. Run it from a queued job rather than a web request where you can.
+A chain runs synchronously, so whatever calls it waits for the upload, the compression and the download: seconds for most files, and up to `timeout` when Iminify's queue is busy. Run it from a queued job rather than a web request where you can.
 
 ## Using your own client
 
@@ -93,4 +97,4 @@ class MyOptimizer extends IminifyOptimizer
 }
 ```
 
-This is also how to fake it in your tests, and what to do when a chain goes on a queue. A queue serializes the chain, so the optimizer keeps no client in a property, and an `api_key` in its options travels in the job's payload. Overriding `client()` keeps the key out of it.
+This is also how to fake it in your tests, along with `pause()`, which is what a rate-limit wait calls. And it's what to do when a chain goes on a queue. A queue serializes the chain, so the optimizer keeps no client in a property, and an `api_key` in its options travels in the job's payload. Overriding `client()` keeps the key out of it.

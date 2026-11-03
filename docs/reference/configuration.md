@@ -10,7 +10,7 @@ use Mozex\Iminify\Iminify;
 
 $client = Iminify::factory()
     ->withApiKey(getenv('IMINIFY_API_KEY'))
-    ->withTimeout(60)
+    ->withTimeout(300)
     ->make();
 ```
 
@@ -20,14 +20,14 @@ $client = Iminify::factory()
 | `withTimeout($seconds)` | The seconds one request may take, on a client the factory finds |
 | `withHttpClient($client)` | Any PSR-18 client, set up as you need it |
 | `withRequestFactory($factory)`, `withStreamFactory($factory)` | PSR-17 factories, found for you when left out |
-| `withBaseUri($uri)` | Leave it out for the live API |
-| `withHttpHeader($name, $value)` | A header sent with every request |
+| `withBaseUri($uri)` | Leave it out for the live API. It takes no query string or fragment |
+| `withHttpHeader($name, $value)` | A header sent with every request. `Authorization`, `Accept` and `Iminify-Client` are the client's own, and refused here |
 | `withClientIdentifier($identifier)` | What the `Iminify-Client` header says, for a package built on this one |
 | `withSleep($closure)` | What waiting calls instead of `usleep()`, given the seconds to wait |
 
 ## Timeouts
 
-PSR-18 has no timeout of its own, and a client found through discovery has none set. Without one, a stalled read blocks for good, and `wait()` can't help, because it only checks its clock between reads.
+PSR-18 has no timeout of its own, and a client found through discovery has none set. Without one, a stalled read blocks forever, and `wait()` can't help, because it only checks its clock between reads.
 
 `withTimeout()` sets one on a client the factory finds. Symfony's client and Guzzle take it. Any other client found is refused rather than left without one, so set it up yourself and pass it through `withHttpClient()`. A client you pass keeps whatever you set on it, and `withTimeout()` doesn't touch it:
 
@@ -45,7 +45,7 @@ A large upload or download takes as long as your connection needs, so set the ti
 
 ## Redirects
 
-The API answers at `https://www.iminify.com/api/v1`, and the bare domain answers with a redirect. Following one can turn a POST into a GET that reads as a success, so the client treats any redirect as a failure and throws `UnexpectedResponseException` naming the address.
+The API is at `https://www.iminify.com/api/v1`, and the bare domain responds with a redirect. Following one can turn a POST into a GET that reads as a success, so the client treats any redirect as a failure and throws `UnexpectedResponseException` naming the address.
 
 A client found through discovery has its redirects turned off. If you pass your own, don't let it follow them. Guzzle never does through PSR-18. Symfony's does unless you give it `['max_redirects' => 0]`.
 
@@ -60,9 +60,9 @@ Options and parameters pass through as sent, so a new field works without a rele
 ```php
 use Mozex\Iminify\Http\ApiRequest;
 
-$answer = $client->transporter()->send(ApiRequest::get('something-new', ['page' => 2]));
+$response = $client->transporter()->send(ApiRequest::get('something-new', ['page' => 2]));
 
-$answer->json();
+$response->json();
 ```
 
 ## Dumping a client

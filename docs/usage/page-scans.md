@@ -16,7 +16,7 @@ $client->scans()->download($scan)->saveTo('pricing-images.zip');
 
 `create()` takes `level`, `format`, `keep_metadata`, `width`, `height`, `scale`, `alt_text` and `alt_text_language`, which work as they do on an [image](./images.md).
 
-A scan is done once it's no longer `queued` or `scanning` and none of its images are in progress, which is what `wait()` waits for. Its `until` takes a closure for anything more, such as `altTextsInProgress` reaching zero.
+A scan is done once it's no longer `queued` or `scanning` and none of its images are in progress, which is what `wait()` waits for and `$scan->isFinished()` asks. Its `until` takes a closure for anything more, such as `altTextsInProgress` reaching zero.
 
 ## The report
 

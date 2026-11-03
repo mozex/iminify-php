@@ -40,15 +40,13 @@ Business sponsors get logo placement in package READMEs. [**See sponsorship tier
 
 ## What You Get
 
-**Waiting is built in.** The API works in the background, so every long-running record has a `wait()` that backs off between reads, honours `Retry-After` when you're rate limited, and stops at the timeout you give it.
+The API works in the background, so every long-running record has a `wait()` that backs off between reads, waits out a short rate limit and stops at the timeout you give it.
 
-**A typed exception per refusal.** A spent daily allowance throws `DailyLimitReachedException`, a short rate limit `RateLimitedException` with its `$retryAfter`, a bad field `ValidationException` with its `$errors`. [See all of them](https://mozex.dev/docs/iminify-php/v1/reference/error-handling).
+A refusal throws its own exception: `DailyLimitReachedException` for a spent daily allowance, `RateLimitedException` with its `$retryAfter` for a short limit, `ValidationException` with its `$errors` for a bad field, and [the rest](https://mozex.dev/docs/iminify-php/v1/reference/error-handling).
 
-**Spatie's image packages, without binaries.** `IminifyOptimizer` takes jpegoptim's place in a chain, and `spatie/image` and Browsershot take a chain. A failure leaves the file exactly as it was. [See how it works](https://mozex.dev/docs/iminify-php/v1/integrations/spatie).
+`IminifyOptimizer` takes jpegoptim's place in a [Spatie chain](https://mozex.dev/docs/iminify-php/v1/integrations/spatie), so the server needs no binaries, and a failure leaves the file exactly as it was. For your own tests, [`FakeClient`](https://mozex.dev/docs/iminify-php/v1/reference/testing) answers from a queue through the real resources, so your code reads the same objects and catches the same exceptions as it does for real.
 
-**A fake for your own tests.** `FakeClient` answers from a queue through the real resources, so your code reads the same objects and catches the same exceptions as it does for real. [See it in use](https://mozex.dev/docs/iminify-php/v1/reference/testing).
-
-**Any HTTP client.** It's built on PSR-18, so it uses Guzzle, Symfony's client or whatever your project already has.
+It's built on PSR-18, so it uses Guzzle, Symfony's client or whatever your project already has.
 
 ## Installation
 
@@ -69,7 +67,7 @@ use Mozex\Iminify\Iminify;
 
 $client = Iminify::factory()
     ->withApiKey(getenv('IMINIFY_API_KEY'))
-    ->withTimeout(60)
+    ->withTimeout(300)
     ->make();
 
 $image = $client->images()->upload('photos/team.jpg', ['format' => 'webp']);
@@ -82,7 +80,7 @@ if ($image->hasResult()) {
 echo "{$image->status->value}, saved {$image->savedPercent}%";
 ```
 
-Give the client a timeout: PSR-18 has none of its own, and `wait()` only checks its clock between reads, so a stalled read otherwise blocks for good.
+Give the client a timeout: PSR-18 has none of its own, and `wait()` only checks its clock between reads, so a stalled read otherwise blocks forever. It covers a whole request, an upload or a download included, so set it with your largest file in mind.
 
 ### Handling a refusal
 
