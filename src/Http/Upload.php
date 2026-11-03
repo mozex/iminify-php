@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Http;
 
 use InvalidArgumentException;
+use Mozex\Iminify\Exceptions\TransportException;
 use Psr\Http\Message\StreamInterface;
 
 /**
@@ -57,32 +58,64 @@ class Upload
     {
         if ($this->source instanceof StreamInterface) {
             while (! $this->source->eof()) {
-                fwrite($target, $this->source->read(1048576));
+                self::write($target, $this->source->read(1048576));
             }
 
             return;
         }
 
         if (is_resource($this->source)) {
-            stream_copy_to_stream($this->source, $target);
+            self::copy($this->source, $target);
 
             return;
+        }
+
+        if (! is_string($this->source)) {
+            throw new InvalidArgumentException('The stream to upload was closed before it could be sent.');
         }
 
         if (! $this->isPath) {
-            fwrite($target, (string) $this->source);
+            self::write($target, $this->source);
 
             return;
         }
 
-        $handle = fopen((string) $this->source, 'rb');
+        $handle = @fopen($this->source, 'rb');
 
         if ($handle === false) {
             throw new InvalidArgumentException("The file at [{$this->source}] can't be opened.");
         }
 
-        stream_copy_to_stream($handle, $target);
-        fclose($handle);
+        try {
+            self::copy($handle, $target);
+        } finally {
+            fclose($handle);
+        }
+    }
+
+    /**
+     * A write that comes up short (a full disk) would otherwise send a cut-off image as complete.
+     *
+     * @param  resource  $target
+     */
+    public static function write(mixed $target, string $bytes): void
+    {
+        $written = @fwrite($target, $bytes);
+
+        if ($written === false || $written < strlen($bytes)) {
+            throw new TransportException("Couldn't write the upload to a temporary stream: the disk may be full.");
+        }
+    }
+
+    /**
+     * @param  resource  $source
+     * @param  resource  $target
+     */
+    protected static function copy(mixed $source, mixed $target): void
+    {
+        if (@stream_copy_to_stream($source, $target) === false) {
+            throw new TransportException("Couldn't write the upload to a temporary stream: the disk may be full.");
+        }
     }
 
     protected static function name(string $name): string

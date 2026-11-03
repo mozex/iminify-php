@@ -29,6 +29,6 @@ class RateLimit
 
     protected static function number(?string $value): ?int
     {
-        return $value !== null && ctype_digit($value) ? (int) $value : null;
+        return $value !== null && preg_match('/\A\d+\z/', $value) === 1 ? (int) $value : null;
     }
 }

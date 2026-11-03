@@ -36,7 +36,7 @@ class Download
             $response->body,
             self::fileName($response->header('content-disposition')),
             $response->header('content-type'),
-            $response->header('content-encoding') === null && $length !== null && ctype_digit($length) ? (int) $length : null,
+            $response->header('content-encoding') === null && $length !== null && preg_match('/\A\d+\z/', $length) === 1 ? (int) $length : null,
             $response->rateLimit(),
         );
     }
@@ -65,7 +65,7 @@ class Download
 
         while (! $this->body->eof()) {
             $chunk = $this->body->read(1048576);
-            $bytes = fwrite($stream, $chunk);
+            $bytes = @fwrite($stream, $chunk);
 
             if ($bytes === false || $bytes < strlen($chunk)) {
                 throw new IminifyException('The download could not be written: the disk may be full.');
@@ -100,12 +100,12 @@ class Download
 
             $mode = is_file($path) ? fileperms($path) : false;
 
-            if (! @rename($temporary, $path)) {
-                throw new IminifyException("The download can't be saved to [{$path}]: something may hold the file open.");
+            if ($mode !== false) {
+                chmod($temporary, $mode & 0777);
             }
 
-            if ($mode !== false) {
-                chmod($path, $mode & 0777);
+            if (! $this->move($temporary, $path)) {
+                throw new IminifyException("The download can't be saved to [{$path}]: something may hold the file open.");
             }
 
             return $written;
@@ -116,9 +116,24 @@ class Download
         }
     }
 
+    /**
+     * A target another process holds open is refused on Windows, which is this method's
+     * answer to give and not a warning's.
+     */
+    protected function move(string $from, string $to): bool
+    {
+        set_error_handler(static fn (): bool => true);
+
+        try {
+            return rename($from, $to);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
     protected function writeToFile(string $path): int
     {
-        $handle = fopen($path, 'xb');
+        $handle = @fopen($path, 'xb');
 
         if ($handle === false) {
             throw new IminifyException("The download can't be saved to [{$path}].");

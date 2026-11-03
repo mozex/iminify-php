@@ -90,16 +90,52 @@ describe('saving a download', function () {
             ->and(glob($this->folder.'/{,.}*.tmp', GLOB_BRACE))->toBe([]);
     });
 
-    it('replaces a file already there and keeps its permissions', function () {
+    it('replaces a file already there', function () {
         $path = $this->folder.'/photo.webp';
         file_put_contents($path, 'old');
-        chmod($path, 0644);
-        $mode = fileperms($path);
 
         downloadOf('new')->saveTo($path);
 
-        expect(file_get_contents($path))->toBe('new')
-            ->and(fileperms($path))->toBe($mode);
+        expect(file_get_contents($path))->toBe('new');
+    });
+
+    it('keeps the permissions of the file it replaces', function () {
+        $path = $this->folder.'/photo.webp';
+        file_put_contents($path, 'old');
+        chmod($path, 0600);
+
+        downloadOf('new')->saveTo($path);
+
+        expect(fileperms($path) & 0777)->toBe(0600);
+    })->skipOnWindows();
+
+    it('says so when the file cannot be replaced, and leaves nothing behind', function () {
+        $path = $this->folder.'/photo.webp';
+        mkdir($path);
+
+        try {
+            expect(fn () => downloadOf('new')->saveTo($path))->toThrow(IminifyException::class, "can't be saved")
+                ->and(glob($this->folder.'/{,.}*.tmp', GLOB_BRACE))->toBe([]);
+        } finally {
+            rmdir($path);
+        }
+    });
+
+    it('fails in its own exception when a framework turns warnings into exceptions', function () {
+        $readOnly = fopen('php://memory', 'rb');
+        set_error_handler(function (int $level, string $message): bool {
+            if ((error_reporting() & $level) !== 0) {
+                throw new ErrorException($message);
+            }
+
+            return true;
+        });
+
+        try {
+            expect(fn () => downloadOf('bytes')->writeTo($readOnly))->toThrow(IminifyException::class, 'could not be written');
+        } finally {
+            restore_error_handler();
+        }
     });
 
     it('can be saved after its contents were read', function () {

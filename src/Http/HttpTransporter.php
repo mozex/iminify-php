@@ -118,13 +118,13 @@ class HttpTransporter implements TransporterContract
         foreach ($request->fields as $name => $value) {
             foreach (is_array($value) ? $value : [$value] as $item) {
                 $field = is_array($value) ? "{$name}[]" : $name;
-                fwrite($body, "--{$boundary}\r\nContent-Disposition: form-data; name=\"{$this->quote($field)}\"\r\n\r\n{$this->formValue($item)}\r\n");
+                Upload::write($body, "--{$boundary}\r\nContent-Disposition: form-data; name=\"{$this->quote($field)}\"\r\n\r\n{$this->formValue($item)}\r\n");
             }
         }
 
-        fwrite($body, "--{$boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{$this->quote($upload->name)}\"\r\nContent-Type: application/octet-stream\r\n\r\n");
+        Upload::write($body, "--{$boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{$this->quote($upload->name)}\"\r\nContent-Type: application/octet-stream\r\n\r\n");
         $upload->copyTo($body);
-        fwrite($body, "\r\n--{$boundary}--\r\n");
+        Upload::write($body, "\r\n--{$boundary}--\r\n");
         rewind($body);
 
         return $this->streamFactory->createStreamFromResource($body);

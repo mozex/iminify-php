@@ -137,6 +137,44 @@ describe('a multipart upload', function () {
             ->and((string) $http->requests[2]->getBody())->toContain('filename="c.jpg"')->toContain('from-psr');
     });
 
+    it('refuses a stream closed before it could be sent, rather than sending its description', function () {
+        $handle = fopen('php://memory', 'r+b');
+        $upload = Upload::fromStream($handle, 'a.jpg');
+        fclose($handle);
+        $http = new RecordingHttpClient;
+
+        expect(fn () => factoryAnswering($http)->make()->transporter()->send(ApiRequest::upload('images', $upload)))
+            ->toThrow(InvalidArgumentException::class, 'was closed')
+            ->and($http->requests)->toBe([]);
+    });
+
+    it('stops rather than send a file it could not copy whole', function () {
+        $readOnly = fopen('php://memory', 'rb');
+
+        expect(fn () => Upload::fromContents('bytes', 'a.jpg')->copyTo($readOnly))->toThrow(TransportException::class, 'temporary stream');
+    });
+
+    it('never holds a large file in memory', function () {
+        $path = tempnam(sys_get_temp_dir(), 'iminify');
+        $handle = fopen($path, 'r+b');
+        ftruncate($handle, 40 * 1024 * 1024);
+        fclose($handle);
+        $http = new RecordingHttpClient([jsonResponse(['data' => []], 202)]);
+        $transporter = factoryAnswering($http)->make()->transporter();
+        gc_collect_cycles();
+        memory_reset_peak_usage();
+        $before = memory_get_usage();
+
+        try {
+            $transporter->send(ApiRequest::upload('images', Upload::fromPath($path, 'large.jpg')));
+        } finally {
+            unlink($path);
+        }
+
+        expect(memory_get_peak_usage() - $before)->toBeLessThan(8 * 1024 * 1024)
+            ->and($http->requests[0]->getBody()->getSize())->toBeGreaterThan(40 * 1024 * 1024);
+    });
+
     it('takes the name from the path and refuses what it cannot read or name', function () {
         $path = tempnam(sys_get_temp_dir(), 'iminify');
 
