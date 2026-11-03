@@ -65,7 +65,11 @@ class Images extends ApiResource
 
     /**
      * Reads the image until it has finished, whether it completed, failed or was cancelled, and
-     * returns it. Pass `$until` to wait for more, such as its alt text or responsive sizes.
+     * returns it. Pass `$until` to wait for more once it has a result, such as its alt text or
+     * responsive sizes; a failed or cancelled image has none, and ends the wait all the same.
+     *
+     * `$timeout` is checked between reads, so a read that stalls runs for as long as the HTTP
+     * client lets it: give the client a timeout of its own.
      *
      * @param  int  $timeout  in seconds
      * @param  (Closure(Image): bool)|null  $until
@@ -76,7 +80,7 @@ class Images extends ApiResource
     {
         return $this->poll(
             fn (): Image => $this->get($image),
-            $until ?? fn (Image $current): bool => $current->isFinished(),
+            fn (Image $current): bool => $current->isFinished() && ($until === null || ! $current->hasResult() || $until($current)),
             $timeout,
             'The image',
             $image instanceof Image ? $image : null,

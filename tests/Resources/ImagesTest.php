@@ -278,6 +278,38 @@ describe('waiting', function () {
             ->and($http->requests)->toHaveCount(2);
     });
 
+    it('holds to the finish whatever more it was asked to wait for', function () {
+        $http = new RecordingHttpClient([
+            jsonResponse(['data' => Fixtures::queuedImage()]),
+            jsonResponse(['data' => Fixtures::queuedImage(['status' => 'optimizing'])]),
+            jsonResponse(['data' => Fixtures::image(['alt_text' => null])]),
+        ]);
+
+        $image = clientAnswering($http)->images()->wait(IMAGE_ID, until: fn (Image $image): bool => $image->altText?->status !== AltTextStatus::Pending);
+
+        expect($image->status)->toBe(ImageStatus::Completed)
+            ->and($http->requests)->toHaveCount(3);
+    });
+
+    it('ends on a failed image, whose alt text stays pending for good', function () {
+        $http = new RecordingHttpClient([jsonResponse(['data' => Fixtures::queuedImage([
+            'status' => 'failed',
+            'alt_text' => ['status' => 'pending', 'text' => null, 'language' => 'en', 'suggested_name' => null],
+        ])])]);
+
+        $image = clientAnswering($http)->images()->wait(IMAGE_ID, until: fn (Image $image): bool => $image->altText?->status !== AltTextStatus::Pending);
+
+        expect($image->status)->toBe(ImageStatus::Failed)
+            ->and($http->requests)->toHaveCount(1);
+    });
+
+    it('counts the real clock as well as what it slept', function () {
+        $http = new RecordingHttpClient(array_fill(0, 2, jsonResponse(['data' => Fixtures::queuedImage()])));
+
+        expect(fn () => clientAnswering($http)->images()->wait(IMAGE_ID, 1))->toThrow(WaitTimeoutException::class)
+            ->and($http->requests)->toHaveCount(1);
+    });
+
     it('waits out a rate limit and reads again', function () {
         [$sleep, $slept] = recordingSleep();
         $http = new RecordingHttpClient([
@@ -352,6 +384,39 @@ describe('waiting', function () {
 
         expect((hrtime(true) - $started) / 1e9)->toBeGreaterThanOrEqual(0.9);
     });
+});
+
+it('uploads an image, waits for it and saves the result', function () {
+    $source = tempnam(sys_get_temp_dir(), 'iminify');
+    $target = tempnam(sys_get_temp_dir(), 'iminify');
+    file_put_contents($source, 'the-upload');
+    file_put_contents($target, 'old');
+    $http = new RecordingHttpClient([
+        jsonResponse(['data' => Fixtures::queuedImage()], 202),
+        jsonResponse(['data' => Fixtures::queuedImage(['status' => 'optimizing'])]),
+        jsonResponse(['data' => Fixtures::image()]),
+        new Response(200, ['Content-Type' => 'image/webp', 'Content-Length' => '11'], 'the-smaller'),
+    ]);
+
+    try {
+        $images = clientAnswering($http)->images();
+        $finished = $images->wait($images->upload($source, name: 'photo.jpg'));
+        $written = $images->download($finished)->saveTo($target);
+        $saved = file_get_contents($target);
+    } finally {
+        unlink($source);
+        unlink($target);
+    }
+
+    expect($finished->status)->toBe(ImageStatus::Completed)
+        ->and($written)->toBe(11)
+        ->and($saved)->toBe('the-smaller')
+        ->and(array_map(fn ($request): string => $request->getMethod().' '.$request->getUri()->getPath(), $http->requests))->toBe([
+            'POST /api/v1/images',
+            'GET /api/v1/images/'.IMAGE_ID,
+            'GET /api/v1/images/'.IMAGE_ID,
+            'GET /api/v1/images/'.IMAGE_ID.'/download',
+        ]);
 });
 
 it('does not catch a rate limit on a call that is not waiting', function () {
