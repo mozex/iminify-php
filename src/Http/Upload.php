@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Mozex\Iminify\Http;
 
-use ErrorException;
+use Exception;
 use InvalidArgumentException;
 use Mozex\Iminify\Exceptions\TransportException;
 use Psr\Http\Message\StreamInterface;
-use RuntimeException;
 
 /**
  * A file on its way to the API: a path, the bytes or an open stream, under the name the
@@ -91,7 +90,7 @@ class Upload
     public function copyTo(mixed $target): void
     {
         $expected = $this->size();
-        $copied = $this->copied($target);
+        $copied = $this->copySource($target);
 
         if ($expected !== null && $copied !== $expected) {
             throw new TransportException("The file came to {$copied} bytes of the {$expected} it should have, so it wasn't sent: it broke off or changed while being read.");
@@ -101,7 +100,7 @@ class Upload
     /**
      * @param  resource  $target
      */
-    protected function copied(mixed $target): int
+    protected function copySource(mixed $target): int
     {
         if ($this->source instanceof StreamInterface) {
             return $this->copyStream($this->source, $target);
@@ -135,22 +134,24 @@ class Upload
     }
 
     /**
+     * A failed read ends in this package's exception, whatever the stream or a framework's error
+     * handler made of it. A failed write already does, with its own message.
+     *
      * @param  resource  $target
      */
     protected function copyStream(StreamInterface $source, mixed $target): int
     {
         $copied = 0;
 
-        try {
-            while (! $source->eof()) {
+        while (! $source->eof()) {
+            try {
                 $chunk = $source->read(1048576);
-                self::write($target, $chunk);
-                $copied += strlen($chunk);
+            } catch (Exception $exception) {
+                throw new TransportException("The file couldn't be read: {$exception->getMessage()}", 0, $exception);
             }
-        } catch (TransportException $exception) {
-            throw $exception;
-        } catch (RuntimeException|ErrorException $exception) {
-            throw new TransportException("The file couldn't be read: {$exception->getMessage()}", 0, $exception);
+
+            self::write($target, $chunk);
+            $copied += strlen($chunk);
         }
 
         return $copied;

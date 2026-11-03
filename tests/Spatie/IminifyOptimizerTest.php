@@ -242,24 +242,20 @@ describe('what never reaches the file', function () {
     ]);
 
     it('keeps a file replaced with the same number of bytes while the download streamed', function () {
-        $path = $this->path;
         $replacement = strrev(JPEG_BYTES);
         $body = FnStream::decorate(Utils::streamFor(JPEG_SMALLER), [
-            'read' => function (int $length) use ($path, $replacement): string {
-                file_put_contents($path, $replacement);
+            'read' => function (int $length) use ($replacement): string {
+                file_put_contents($this->path, $replacement);
 
                 return JPEG_SMALLER;
             },
-            'eof' => function () use ($path, $replacement): bool {
-                return file_get_contents($path) === $replacement;
-            },
+            'eof' => fn (): bool => file_get_contents($this->path) === $replacement,
             'isSeekable' => fn (): bool => false,
         ]);
         $client = new FakeClient([Fixtures::queuedImage(['id' => 'abc']), optimizedImage(['id' => 'abc']), new ApiResponse(200, [], $body), Fixtures::noContent()]);
 
-        expect(fn () => optimizing($client, $path, $this->logger))->toThrow(IminifyException::class, 'changed while');
-
-        expect(file_get_contents($path))->toBe($replacement);
+        expect(fn () => optimizing($client, $this->path, $this->logger))->toThrow(IminifyException::class, 'changed while')
+            ->and(file_get_contents($this->path))->toBe($replacement);
     });
 
     it('spends nothing on a file it could not write back', function () {
@@ -433,9 +429,8 @@ describe('refusals', function () {
     it('lets a refused upload through with nothing to clean up', function () {
         $client = new FakeClient([Fixtures::refusal('start_failed', 503)]);
 
-        expect(fn () => optimizing($client, $this->path, $this->logger))->toThrow(ServerException::class);
-
-        expect($client->requests())->toHaveCount(1);
+        expect(fn () => optimizing($client, $this->path, $this->logger))->toThrow(ServerException::class)
+            ->and($client->requests())->toHaveCount(1);
     });
 
     it('never lets the clean-up replace what went wrong', function () {
@@ -445,9 +440,8 @@ describe('refusals', function () {
             new RuntimeException('The second error.'),
         ]);
 
-        expect(fn () => optimizing($client, $this->path, $this->logger))->toThrow(TransportException::class, 'The first error.');
-
-        expect($this->logger->at('warning')[0])->toContain('The second error.')
+        expect(fn () => optimizing($client, $this->path, $this->logger))->toThrow(TransportException::class, 'The first error.')
+            ->and($this->logger->at('warning')[0])->toContain('The second error.')
             ->and(file_get_contents($this->path))->toBe(JPEG_BYTES);
     });
 });
@@ -484,11 +478,10 @@ describe('how a chain treats it', function () {
 
         $build($optimizer);
 
-        $transporter = $optimizer->clientNow()->transporter();
-        $http = (fn (): object => $this->client)->call($transporter);
+        $client = $optimizer->clientNow();
 
-        expect((fn (): array => $this->headers)->call($transporter)['Authorization'])->toBe('Bearer a-key')
-            ->and((fn (): array => $this->config)->call($http)['timeout'])->toBe(45);
+        expect((fn (): array => $this->headers)->call($client->transporter())['Authorization'])->toBe('Bearer a-key')
+            ->and((fn (): array => $this->config)->call(httpClientOf($client))['timeout'])->toBe(45);
     })->with([
         'with options after' => [fn (IminifyOptimizer $optimizer) => $optimizer->setOptions(['api_key' => 'a-key', 'timeout' => 45])],
         'with options first' => [fn (IminifyOptimizer $optimizer) => $optimizer->__construct(['api_key' => 'a-key', 'timeout' => 45])],

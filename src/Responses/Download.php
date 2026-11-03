@@ -92,15 +92,18 @@ class Download
     /**
      * Saves the file and returns its size. It lands in one step, through a temporary file beside
      * the target, so a broken transfer leaves whatever was at the path untouched. A link to a
-     * file is followed. A file it replaces keeps its permissions, and belongs from then on to the user
-     * PHP runs as, since replacing a file can't keep its owner.
+     * file is followed. A file it replaces keeps its permissions, and belongs from then on to the
+     * user PHP runs as, since replacing a file can't keep its owner.
      *
      * @param  int|null  $expectedSize  the bytes it has to come to, such as the `size` the API gave, for an answer that doesn't state its length
      * @param  (Closure(string): void)|null  $check  given the finished temporary file's path before anything is replaced, and throws to keep what's at the path
      */
     public function saveTo(string $path, ?int $expectedSize = null, ?Closure $check = null): int
     {
-        $path = is_link($path) ? (realpath($path) ?: $path) : $path;
+        if (is_link($path)) {
+            $path = realpath($path) ?: $path;
+        }
+
         $directory = dirname($path);
 
         if (! is_dir($directory) || ! is_writable($directory) || (is_file($path) && ! is_writable($path))) {
@@ -110,7 +113,7 @@ class Download
         $temporary = $directory.'/.iminify-'.bin2hex(random_bytes(8)).'.tmp';
 
         try {
-            $written = $this->writeToFile($temporary, is_file($path) ? ((int) fileperms($path)) & 0777 : null);
+            $written = $this->writeToFile($temporary, is_file($path) ? (int) fileperms($path) & 0777 : null);
             $expected = $expectedSize ?? $this->size;
 
             if ($written === 0 || ($expected !== null && $written !== $expected)) {
@@ -180,7 +183,7 @@ class Download
 
             $written = $this->writeTo($handle);
 
-            if (stream_is_local($handle) && ! @fsync($handle)) {
+            if (stream_get_meta_data($handle)['wrapper_type'] === 'plainfile' && ! @fsync($handle)) {
                 throw new IminifyException("The download can't be saved to [{$path}]: the disk didn't keep it.");
             }
 

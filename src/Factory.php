@@ -185,9 +185,10 @@ class Factory
     protected function discoverHttpClient(): ClientInterface
     {
         $client = $this->findHttpClient();
+        $timeoutOptions = $this->timeout === null ? [] : ['timeout' => $this->timeout, 'max_duration' => $this->timeout];
 
         return match (true) {
-            method_exists($client, 'withOptions') => $client->withOptions(['max_redirects' => 0] + ($this->timeout === null ? [] : ['timeout' => $this->timeout, 'max_duration' => $this->timeout])),
+            method_exists($client, 'withOptions') => $client->withOptions(['max_redirects' => 0] + $timeoutOptions),
             $this->timeout === null => $client,
             $client instanceof GuzzleClient => new GuzzleClient(['timeout' => $this->timeout]),
             default => throw new InvalidArgumentException('A timeout can\'t be set on the HTTP client found, '.$client::class.'. Pass one set up with yours through withHttpClient().'),

@@ -10,7 +10,7 @@ namespace Mozex\Iminify\Spatie;
  */
 class Deadline
 {
-    protected int $started;
+    protected float $started;
 
     protected int $slept = 0;
 

@@ -91,10 +91,9 @@ describe('saving a download', function () {
         file_put_contents($path, 'old');
         chmod($path, 0600);
         $seen = null;
-        $folder = $this->folder;
         $stream = FnStream::decorate(Utils::streamFor('new'), [
-            'read' => function (int $length) use (&$seen, $folder): string {
-                $seen = fileperms((string) glob($folder.'/.iminify-*.tmp')[0]) & 0777;
+            'read' => function (int $length) use (&$seen): string {
+                $seen = fileperms((string) glob($this->folder.'/.iminify-*.tmp')[0]) & 0777;
 
                 return 'new';
             },

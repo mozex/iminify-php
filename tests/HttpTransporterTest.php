@@ -324,25 +324,24 @@ describe('an answer that streams', function () {
 });
 
 describe('the factory', function () {
+    $finding = fn (ClientInterface $client): Factory => (new class($client) extends Factory
+    {
+        public function __construct(protected ClientInterface $found) {}
+
+        protected function findHttpClient(): ClientInterface
+        {
+            return $this->found;
+        }
+    })->withApiKey('a-key')->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory);
+
     it('makes a client with whatever HTTP client it discovers', function () {
         expect(Iminify::client('a-key'))->toBeInstanceOf(Client::class);
     });
 
-    it('turns redirects off on a client it discovered, which may follow them', function () {
+    it('turns redirects off on a client it discovered, which may follow them', function () use ($finding) {
         $discovered = new FollowingHttpClient;
-        $factory = new class($discovered) extends Factory
-        {
-            public function __construct(protected ClientInterface $discovered) {}
 
-            protected function findHttpClient(): ClientInterface
-            {
-                return $this->discovered;
-            }
-        };
-
-        $client = $factory->withApiKey('a-key')->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory)->make();
-
-        expect(httpClientOf($client)->options)->toBe(['max_redirects' => 0])
+        expect(httpClientOf($finding($discovered)->make())->options)->toBe(['max_redirects' => 0])
             ->and($discovered->options)->toBe([]);
     });
 
@@ -354,17 +353,7 @@ describe('the factory', function () {
         expect($given->options)->toBe([]);
     });
 
-    describe('a timeout', function () {
-        $finding = fn (ClientInterface $client): Factory => (new class($client) extends Factory
-        {
-            public function __construct(protected ClientInterface $found) {}
-
-            protected function findHttpClient(): ClientInterface
-            {
-                return $this->found;
-            }
-        })->withApiKey('a-key')->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory);
-
+    describe('a timeout', function () use ($finding) {
         it('reaches a client found that takes options, beside redirects off', function () use ($finding) {
             $client = $finding(new FollowingHttpClient)->withTimeout(30)->make();
 

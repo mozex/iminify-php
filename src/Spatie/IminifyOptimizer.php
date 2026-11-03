@@ -15,6 +15,7 @@ use Mozex\Iminify\Exceptions\WaitTimeoutException;
 use Mozex\Iminify\Http\Upload;
 use Mozex\Iminify\Iminify;
 use Mozex\Iminify\Resources\Images;
+use Mozex\Iminify\Responses\Download;
 use Mozex\Iminify\Responses\Image as IminifyImage;
 use Psr\Log\LoggerInterface;
 use Spatie\ImageOptimizer\Image;
@@ -67,8 +68,6 @@ class IminifyOptimizer extends BaseSelfHandlingOptimizer
         $deadline = new Deadline($this->timeout());
         $before = $this->fingerprint($path);
         $images = $this->client()->images();
-
-        /** @var IminifyImage $current */
         $current = $this->retrying(fn (): IminifyImage => $images->upload(Upload::fromPath($path, "image.{$format}"), $this->uploadOptions()), $deadline);
 
         try {
@@ -110,12 +109,13 @@ class IminifyOptimizer extends BaseSelfHandlingOptimizer
     protected function timeout(): int
     {
         $timeout = $this->options['timeout'] ?? static::DEFAULT_TIMEOUT;
+        $seconds = is_numeric($timeout) ? (int) $timeout : 0;
 
-        if (! is_numeric($timeout) || (int) $timeout < 1 || (int) $timeout > static::MAX_TIMEOUT) {
+        if ($seconds < 1 || $seconds > static::MAX_TIMEOUT) {
             throw new InvalidArgumentException('The optimizer\'s timeout option is a number of seconds, from 1 to '.static::MAX_TIMEOUT.'.');
         }
 
-        return (int) $timeout;
+        return $seconds;
     }
 
     /**
@@ -169,8 +169,6 @@ class IminifyOptimizer extends BaseSelfHandlingOptimizer
      */
     protected function writeBack(Images $images, IminifyImage $image, string $path, string $mime, array $before, Deadline $deadline, LoggerInterface $logger): void
     {
-        $format = static::FORMATS[$mime];
-
         if ($image->status === ImageStatus::AlreadyOptimized) {
             $logger->info('Iminify found nothing to save in this file.');
 
@@ -181,29 +179,33 @@ class IminifyOptimizer extends BaseSelfHandlingOptimizer
             throw new IminifyException("Iminify couldn't optimize the file: the image ended as [{$image->status->value}].");
         }
 
-        if ($image->original->size !== $before[0]) {
-            throw new IminifyException("Iminify received {$image->original->size} bytes of a {$before[0]} byte file, so the file was left as it is.");
+        [$size] = $before;
+        $format = static::FORMATS[$mime];
+
+        if ($image->original->size !== $size) {
+            throw new IminifyException("Iminify received {$image->original->size} bytes of a {$size} byte file, so the file was left as it is.");
         }
 
         if (static::normalize($image->optimized->format) !== $format) {
             throw new IminifyException("Iminify answered in [{$image->optimized->format}] rather than [{$format}], so the file was left as it is.");
         }
 
-        if ($image->optimized->size >= $before[0]) {
+        if ($image->optimized->size >= $size) {
             $logger->info('Iminify\'s copy of this file isn\'t smaller, so the file was left as it is.');
 
             return;
         }
 
-        $this->retrying(fn () => $images->download($image), $deadline)->saveTo($path, $image->optimized->size, function (string $temporary) use ($path, $mime, $before): void {
-            if (mime_content_type($temporary) !== $mime) {
-                throw new IminifyException("What Iminify sent isn't a file of type [{$mime}], so the file was left as it is.");
-            }
+        $this->retrying(fn (): Download => $images->download($image), $deadline)
+            ->saveTo($path, $image->optimized->size, function (string $temporary) use ($path, $mime, $before): void {
+                if (mime_content_type($temporary) !== $mime) {
+                    throw new IminifyException("What Iminify sent isn't a file of type [{$mime}], so the file was left as it is.");
+                }
 
-            if ($this->fingerprint($path) !== $before) {
-                throw new IminifyException('The file changed while Iminify was working on it, so it was left as it is.');
-            }
-        });
+                if ($this->fingerprint($path) !== $before) {
+                    throw new IminifyException('The file changed while Iminify was working on it, so it was left as it is.');
+                }
+            });
     }
 
     /**
