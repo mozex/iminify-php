@@ -27,9 +27,19 @@ describe('the size of an upload', function () {
         fwrite($stream, 'twelve bytes');
         fseek($stream, 7);
 
-        expect(Upload::fromStream($stream, 'a.jpg')->size())->toBe(5);
+        $upload = Upload::fromStream($stream, 'a.jpg');
+        $target = fopen('php://memory', 'r+b');
+
+        expect($upload->size())->toBe(5)
+            ->and(ftell($stream))->toBe(7);
+
+        $upload->copyTo($target);
+        rewind($target);
+
+        expect(stream_get_contents($target))->toBe('bytes');
 
         fclose($stream);
+        fclose($target);
     });
 
     it('counts what is left of a PSR-7 stream', function () {
