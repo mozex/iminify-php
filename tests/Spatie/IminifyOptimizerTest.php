@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\FnStream;
 use GuzzleHttp\Psr7\Response;
+use GuzzleHttp\Psr7\Utils;
 use Mozex\Iminify\Client;
 use Mozex\Iminify\Exceptions\DailyLimitReachedException;
 use Mozex\Iminify\Exceptions\IminifyException;
@@ -215,38 +217,49 @@ describe('what never reaches the file', function () {
         'an upload that arrived cut off' => [fn (): array => optimizedImage(['id' => 'abc', 'original' => ['name' => 'image.jpg', 'format' => 'jpg', 'size' => 10, 'width' => 1, 'height' => 1, 'download_url' => 'https://www.iminify.com/x']]), 'received 10 bytes'],
     ]);
 
-    it('keeps the file when the download comes up short, even with no length stated', function () {
-        $client = new FakeClient([Fixtures::queuedImage(['id' => 'abc']), optimizedImage(['id' => 'abc'], size: 5), Fixtures::file(JPEG_SMALLER), Fixtures::noContent()]);
+    it('keeps the file when the download is not the size the API gave, even with no length stated', function (string $bytes) {
+        $client = new FakeClient([Fixtures::queuedImage(['id' => 'abc']), optimizedImage(['id' => 'abc']), new ApiResponse(200, [], Utils::streamFor($bytes)), Fixtures::noContent()]);
 
         expect(fn () => optimizing($client, $this->path, $this->logger))->toThrow(UnexpectedResponseException::class);
 
         $client->assertSentTimes('DELETE', 'images/abc', 1);
 
         expect(file_get_contents($this->path))->toBe(JPEG_BYTES);
-    });
+    })->with(['short' => ['abc'], 'long' => [JPEG_SMALLER.' and more']]);
 
-    it('keeps a file that changed while Iminify worked on it', function () {
+    it('keeps the file when what came back is not an image of its type, whatever the answer says', function (string $bytes) {
+        $client = new FakeClient([Fixtures::queuedImage(['id' => 'abc']), optimizedImage(['id' => 'abc'], size: strlen($bytes)), new ApiResponse(200, [], Utils::streamFor($bytes)), Fixtures::noContent()]);
+
+        expect(fn () => optimizing($client, $this->path, $this->logger))->toThrow(IminifyException::class, 'isn\'t a file of type');
+
+        $client->assertSentTimes('DELETE', 'images/abc', 1);
+
+        expect(file_get_contents($this->path))->toBe(JPEG_BYTES);
+    })->with([
+        'a login page' => ['<html>Sign in</html>'],
+        'an error in JSON' => ['{"error":"no"}'],
+        'a PNG under a JPEG name' => ["\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"],
+    ]);
+
+    it('keeps a file replaced with the same number of bytes while the download streamed', function () {
         $path = $this->path;
-        $client = new class([Fixtures::queuedImage(['id' => 'abc']), optimizedImage(['id' => 'abc']), Fixtures::file(JPEG_SMALLER), Fixtures::noContent()], $path) extends FakeClient
-        {
-            public function __construct(array $answers, protected string $path)
-            {
-                parent::__construct($answers);
-            }
+        $replacement = strrev(JPEG_BYTES);
+        $body = FnStream::decorate(Utils::streamFor(JPEG_SMALLER), [
+            'read' => function (int $length) use ($path, $replacement): string {
+                file_put_contents($path, $replacement);
 
-            public function send(ApiRequest $request): ApiResponse
-            {
-                if (str_ends_with($request->path, '/download')) {
-                    file_put_contents($this->path, JPEG_BYTES.' and more');
-                }
-
-                return parent::send($request);
-            }
-        };
+                return JPEG_SMALLER;
+            },
+            'eof' => function () use ($path, $replacement): bool {
+                return file_get_contents($path) === $replacement;
+            },
+            'isSeekable' => fn (): bool => false,
+        ]);
+        $client = new FakeClient([Fixtures::queuedImage(['id' => 'abc']), optimizedImage(['id' => 'abc']), new ApiResponse(200, [], $body), Fixtures::noContent()]);
 
         expect(fn () => optimizing($client, $path, $this->logger))->toThrow(IminifyException::class, 'changed while');
 
-        expect(file_get_contents($path))->toBe(JPEG_BYTES.' and more');
+        expect(file_get_contents($path))->toBe($replacement);
     });
 
     it('spends nothing on a file it could not write back', function () {
@@ -257,6 +270,25 @@ describe('what never reaches the file', function () {
             expect(fn () => optimizing($client, $this->path, $this->logger))->toThrow(IminifyException::class, "can't be replaced");
         } finally {
             chmod($this->path, 0644);
+        }
+
+        $client->assertNothingSent();
+    })->skipOnWindows();
+
+    it('spends nothing on a file in a folder it could not write to', function () {
+        $folder = $this->folder.'/locked';
+        mkdir($folder);
+        $path = $folder.'/photo.jpg';
+        file_put_contents($path, JPEG_BYTES);
+        chmod($folder, 0555);
+        $client = new FakeClient;
+
+        try {
+            expect(fn () => optimizing($client, $path, $this->logger))->toThrow(IminifyException::class, "can't be replaced");
+        } finally {
+            chmod($folder, 0755);
+            unlink($path);
+            rmdir($folder);
         }
 
         $client->assertNothingSent();
@@ -331,6 +363,8 @@ describe('its deadline', function () {
         'zero' => [0],
         'below zero' => [-5],
         'not a number' => ['soon'],
+        'past a day' => [86401],
+        'past what a number holds' => [PHP_INT_MAX],
     ]);
 
     it('reads a timeout written as a numeric string', function () {
@@ -353,6 +387,26 @@ describe('refusals', function () {
         $client->assertSentTimes('POST', 'images', 2);
 
         expect($optimizer->paused)->toBe([7]);
+    });
+
+    it('waits out a short rate limit on the download too', function () {
+        $client = new FakeClient([Fixtures::queuedImage(['id' => 'abc']), optimizedImage(['id' => 'abc']), Fixtures::refusal('rate_limited', 429, retryAfter: 4), Fixtures::file(JPEG_SMALLER), Fixtures::noContent()]);
+
+        $optimizer = optimizing($client, $this->path, $this->logger);
+
+        expect($optimizer->paused)->toBe([4])
+            ->and(file_get_contents($this->path))->toBe(JPEG_SMALLER);
+    });
+
+    it('counts what it slept, so a sleep that returns at once still ends the waiting', function () {
+        $client = new FakeClient(array_fill(0, 20, Fixtures::refusal('rate_limited', 429, retryAfter: 1)));
+        $optimizer = new FakeOptimizer($client, ['timeout' => 3]);
+
+        expect(fn () => $optimizer->handle(new Image($this->path), $this->logger))->toThrow(RateLimitedException::class);
+
+        $client->assertSentTimes('POST', 'images', 3);
+
+        expect($optimizer->paused)->toBe([1, 1]);
     });
 
     it('gives up on a rate limit longer than the time it has left', function () {
