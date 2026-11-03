@@ -90,8 +90,10 @@ class Download
     /**
      * Saves the file and returns its size. It lands in one step, through a temporary file beside
      * the target, so a broken transfer leaves whatever was at the path untouched.
+     *
+     * @param  int|null  $expectedSize  the bytes it has to come to, such as the `size` the API gave, for an answer that doesn't state its length
      */
-    public function saveTo(string $path): int
+    public function saveTo(string $path, ?int $expectedSize = null): int
     {
         $directory = dirname($path);
 
@@ -104,8 +106,10 @@ class Download
         try {
             $written = $this->writeToFile($temporary);
 
-            if ($written === 0 || ($this->size !== null && $written !== $this->size)) {
-                throw UnexpectedResponseException::incompleteDownload($written, $this->size);
+            $expected = $expectedSize ?? $this->size;
+
+            if ($written === 0 || ($expected !== null && $written !== $expected)) {
+                throw UnexpectedResponseException::incompleteDownload($written, $expected);
             }
 
             $mode = is_file($path) ? fileperms($path) : false;

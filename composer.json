@@ -42,10 +42,17 @@
         "phpstan/phpstan": "^2.1",
         "phpstan/phpstan-deprecation-rules": "^2.0",
         "phpstan/phpstan-phpunit": "^2.0",
-        "phpunit/phpunit": "^11.5|^12.0|^13.0"
+        "phpunit/phpunit": "^11.5|^12.0|^13.0",
+        "psr/log": "^1.1.4|^2.0|^3.0",
+        "spatie/image": "^3.8",
+        "spatie/image-optimizer": "^1.10"
+    },
+    "conflict": {
+        "spatie/image-optimizer": "<1.10.0"
     },
     "suggest": {
-        "phpunit/phpunit": "For the assertions of Testing\\FakeClient"
+        "phpunit/phpunit": "For the assertions of Testing\\FakeClient",
+        "spatie/image-optimizer": "For Spatie\\IminifyOptimizer, which needs version 1.10 or newer"
     },
     "autoload": {
         "psr-4": {
