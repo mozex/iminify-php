@@ -13,13 +13,14 @@ use Mozex\Iminify\Enums\ScanStatus;
 class Scan
 {
     /**
+     * @param  string|null  $note  what the scanner wrote when it finished, or why it failed
      * @param  string|null  $crawlId  the site crawl it's a page of
      * @param  ImageSettings  $settings  what every image it finds is sent with; a scan takes no size limit or responsive widths
      * @param  list<SkippedImage>  $skipped
      * @param  int  $originalSize  in bytes, as are the two after it
      * @param  string  $downloadUrl  the zip's address; it needs your key
-     * @param  list<Image>|null  $images  only when one scan is read, and then in full; null in a list or a webhook
-     * @param  ScanAudit|null  $audit  only when one scan is read, once a browser has been through the page
+     * @param  list<Image>|null  $images  only on a single scan; null in a list or a webhook
+     * @param  ScanAudit|null  $audit  the page's report, only on a single scan and once there is one
      * @param  array<array-key, mixed>  $attributes  the answer as the API sent it
      */
     public function __construct(

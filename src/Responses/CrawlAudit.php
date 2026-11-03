@@ -10,8 +10,8 @@ namespace Mozex\Iminify\Responses;
 class CrawlAudit
 {
     /**
-     * @param  int  $oversizedBytes  what the site's oversized images send for nothing
-     * @param  int  $bytes  what the site's images weigh
+     * @param  int  $oversizedBytes  about how many bytes the oversized images would shed at twice the size they're shown
+     * @param  int  $bytes  what a browser downloaded for the site's images
      */
     public function __construct(
         public readonly int $pagesAudited,

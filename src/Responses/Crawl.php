@@ -16,11 +16,12 @@ class Crawl
      * @param  string  $source  `sitemap`, `pages`
      * @param  string|null  $monitorId  the weekly check it's a run of
      * @param  ImageSettings  $settings  what every image it finds is sent with; a crawl takes no size limit or responsive widths
-     * @param  int  $pagesLeftOut  pages past what the plan takes per crawl
+     * @param  string|null  $note  why it failed
+     * @param  int  $pagesLeftOut  pages past what the plan takes per crawl, which were not scanned
      * @param  int  $originalSize  in bytes, as are the two after it
      * @param  string  $downloadUrl  the zip's address; it needs your key
-     * @param  list<CrawlPage>|null  $pages  only when one crawl is read; null in a list or on a weekly check's `lastRun`
-     * @param  CrawlAudit|null  $audit  only when one crawl is read, once nothing is at work
+     * @param  list<CrawlPage>|null  $pages  only on a single crawl; null in a list or on a weekly check's `lastRun`
+     * @param  CrawlAudit|null  $audit  the site's report, only on a single crawl and once nothing is at work
      * @param  array<array-key, mixed>  $attributes  the answer as the API sent it
      */
     public function __construct(

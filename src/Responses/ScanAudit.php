@@ -10,10 +10,10 @@ namespace Mozex\Iminify\Responses;
 class ScanAudit
 {
     /**
-     * @param  bool  $rendered  whether a browser rendered the page, which every measure of size on screen needs
-     * @param  int  $oversizedBytes  what the page's oversized images send for nothing
-     * @param  int  $bytes  what the page's images weigh
-     * @param  array<string, int>  $formats  how many images in each format
+     * @param  bool  $rendered  whether a browser opened the page; false when only its HTML could be read, and then every finding count is 0
+     * @param  int  $oversizedBytes  about how many bytes the oversized images would shed at twice the size they're shown
+     * @param  int  $bytes  what a browser downloaded for the images listed
+     * @param  array<string, int>  $formats  how many images arrived in each format, the commonest first
      * @param  list<AuditImage>  $images
      */
     public function __construct(

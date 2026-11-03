@@ -15,7 +15,8 @@ class Monitor
      * @param  string  $source  `sitemap`, `pages`
      * @param  string|null  $crawlId  the crawl it was made from, until that's deleted
      * @param  ImageSettings  $settings  what every image a run finds is sent with
-     * @param  bool  $emails  whether a run sends its email
+     * @param  bool  $emails  whether a run that finds new or changed images, or scans no page at all, emails you
+     * @param  bool  $paused  true while the plan doesn't cover it; it's kept, and runs again once the plan does
      * @param  Crawl|null  $lastRun  the newest run, without its pages: read it through `crawls()` for those
      * @param  array<array-key, mixed>  $attributes  the answer as the API sent it
      */

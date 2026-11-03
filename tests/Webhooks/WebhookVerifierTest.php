@@ -13,12 +13,12 @@ use Mozex\Iminify\Webhooks\WebhookVerifier;
 
 const WEBHOOK_SECRET = 'whsec_TfB2r8vQ';
 const WEBHOOK_TIME = 1761400000;
+const WEBHOOK_BODY = '{"id":"9f1c","type":"ping","created_at":"2026-10-25T10:42:07+00:00","data":[]}';
 
 /*
  * The vector the API's own sender is held to, computed once and checked against Python's hmac
  * and Node's crypto as well, so the two ends can't drift apart unnoticed.
  */
-const WEBHOOK_BODY = '{"id":"9f1c","type":"ping","created_at":"2026-10-25T10:42:07+00:00","data":[]}';
 const FIXED_VECTOR_BODY = '{"id":"9f1c","type":"ping"}';
 const FIXED_VECTOR_DIGEST = '38f9e72dcdf429f3d203c387d4712e009e69d22eeeb8e158508ac8e647ccadb6';
 
@@ -31,11 +31,13 @@ describe('a signature that holds up', function () {
     it('matches the fixed vector the sender is held to', function () {
         $header = 't='.WEBHOOK_TIME.',v1='.FIXED_VECTOR_DIGEST;
 
-        expect((new WebhookVerifier(WEBHOOK_SECRET))->sign(FIXED_VECTOR_BODY, WEBHOOK_TIME))->toBe($header);
+        $verifier = new WebhookVerifier(WEBHOOK_SECRET);
 
-        // The vector's body isn't a whole event, so it gets past the signature and stops at the reading.
-        expect(fn () => (new WebhookVerifier(WEBHOOK_SECRET))->verify(FIXED_VECTOR_BODY, $header, WEBHOOK_TIME))
-            ->toThrow(UnexpectedResponseException::class);
+        expect($verifier->sign(FIXED_VECTOR_BODY, WEBHOOK_TIME))->toBe($header)
+            ->and($verifier->isValid(FIXED_VECTOR_BODY, $header, WEBHOOK_TIME))->toBeTrue()
+            ->and($verifier->isValid(FIXED_VECTOR_BODY.' ', $header, WEBHOOK_TIME))->toBeFalse()
+            ->and($verifier->isValid(FIXED_VECTOR_BODY, $header, WEBHOOK_TIME + 301))->toBeFalse()
+            ->and($verifier->isValid(FIXED_VECTOR_BODY, null, WEBHOOK_TIME))->toBeFalse();
     });
 
     it('reads the event of a ping', function () {

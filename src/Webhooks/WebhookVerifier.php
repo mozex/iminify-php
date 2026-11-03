@@ -48,17 +48,26 @@ class WebhookVerifier
      */
     public function verify(string $payload, ?string $signature, ?int $now = null): WebhookEvent
     {
-        [$timestamp, $digest] = $this->parse($signature);
-
-        if (! hash_equals($this->digest($timestamp, $payload), $digest)) {
-            throw InvalidWebhookSignatureException::mismatch();
-        }
-
-        if (abs(($now ?? time()) - (int) $timestamp) > $this->tolerance) {
-            throw InvalidWebhookSignatureException::outsideTolerance($this->tolerance);
-        }
+        $this->ensureValid($payload, $signature, $now);
 
         return WebhookEvent::fromPayload($payload);
+    }
+
+    /**
+     * Whether the request can be trusted, for answering it yourself rather than catching.
+     *
+     * @param  string|null  $signature  the header's value, null when the request has none
+     * @param  int|null  $now  the time to check against, in seconds since 1970, instead of the clock
+     */
+    public function isValid(string $payload, ?string $signature, ?int $now = null): bool
+    {
+        try {
+            $this->ensureValid($payload, $signature, $now);
+        } catch (InvalidWebhookSignatureException) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -81,6 +90,19 @@ class WebhookVerifier
     public function __debugInfo(): array
     {
         return ['secret' => '[hidden]', 'tolerance' => $this->tolerance];
+    }
+
+    protected function ensureValid(string $payload, ?string $signature, ?int $now): void
+    {
+        [$timestamp, $digest] = $this->parse($signature);
+
+        if (! hash_equals($this->digest($timestamp, $payload), $digest)) {
+            throw InvalidWebhookSignatureException::mismatch();
+        }
+
+        if (abs(($now ?? time()) - (int) $timestamp) > $this->tolerance) {
+            throw InvalidWebhookSignatureException::outsideTolerance($this->tolerance);
+        }
     }
 
     /**

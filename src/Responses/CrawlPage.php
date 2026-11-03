@@ -13,7 +13,7 @@ use Mozex\Iminify\Enums\ScanStatus;
 class CrawlPage
 {
     /**
-     * @param  int|null  $imagesToFix  how many of its images have a problem, once its report exists
+     * @param  int|null  $imagesToFix  how many of its image addresses have something worth fixing; null until the crawl's report exists
      */
     public function __construct(
         public readonly string $id,

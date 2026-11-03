@@ -10,14 +10,14 @@ namespace Mozex\Iminify\Responses;
 class AuditImage
 {
     /**
-     * @param  int|null  $bytes  what a browser received
+     * @param  int|null  $bytes  what a browser downloaded for it; null when it didn't load as an image
      * @param  string|null  $alt  `missing`, `empty`, `present`
      * @param  list<string>  $findings  `oversized`, `without_dimensions`, `lazy_above_fold`, `eager_below_fold`, `missing_alt`, `lcp_not_prioritized`
-     * @param  int|null  $wastedBytes  what an oversized image sends for nothing
+     * @param  int|null  $wastedBytes  about how many bytes it would shed at twice the size it's shown, when it's oversized
      * @param  string  $outcome  `compressed`, `skipped`, `left_out`
-     * @param  string|null  $imageId  the image's id, when it was compressed
-     * @param  array<string, int>|null  $formatSizes  the bytes it would take in each format that was measured
-     * @param  string|null  $suggestedAlt  an AI alt text, for an image the page shows with none
+     * @param  string|null  $imageId  the id of its compressed image; for a `duplicate`, of the image it shares its bytes with
+     * @param  array<string, int>|null  $formatSizes  what the compressed file came to in each format, when the scan's format was `auto` and more than one was tried
+     * @param  string|null  $suggestedAlt  an AI alt text, for an image the page shows without one
      */
     public function __construct(
         public readonly string $url,

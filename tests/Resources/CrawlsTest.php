@@ -108,7 +108,7 @@ describe('the other calls', function () {
 
     it('reaches every address, by id or by the record', function () {
         $crawl = Crawl::from(Fixtures::queuedCrawl(['id' => 'from-the-record']));
-        $fake = new FakeClient([Fixtures::file('zip', 'crawl.zip', 'application/zip'), Fixtures::noContent(), Fixtures::refusal('crawl_in_progress', 409)]);
+        $fake = new FakeClient([Fixtures::file('zip', 'crawl.zip', 'application/zip'), Fixtures::noContent(), Fixtures::refusal('scan_in_progress', 409)]);
 
         expect($fake->crawls()->download($crawl)->contents())->toBe('zip');
 

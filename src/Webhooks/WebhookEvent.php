@@ -7,7 +7,6 @@ namespace Mozex\Iminify\Webhooks;
 use Closure;
 use DateTimeImmutable;
 use Exception;
-use JsonException;
 use Mozex\Iminify\Enums\WebhookEventType;
 use Mozex\Iminify\Exceptions\IminifyException;
 use Mozex\Iminify\Exceptions\UnexpectedResponseException;
@@ -40,11 +39,7 @@ class WebhookEvent
     public static function fromPayload(string $payload): self
     {
         return self::read(function () use ($payload): self {
-            try {
-                $attributes = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
-            } catch (JsonException) {
-                throw UnexpectedResponseException::notJson(200);
-            }
+            $attributes = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 
             return new self(
                 $attributes['id'] ?? null,
