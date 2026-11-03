@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use Mozex\Iminify\Client;
 use Mozex\Iminify\Enums\AltTextStatus;
 use Mozex\Iminify\Enums\CompressionLevel;
 use Mozex\Iminify\Enums\ContentCredentialsStatus;
@@ -93,7 +92,13 @@ describe('the operation map', function () {
             default => expectReadAs($result, $example['data'], $operationId),
         };
 
-        foreach (is_array($result) ? $result : ($result instanceof Page ? $result->items : []) as $index => $record) {
+        $records = match (true) {
+            is_array($result) => $result,
+            $result instanceof Page => $result->items,
+            default => [],
+        };
+
+        foreach ($records as $index => $record) {
             expectReadAs($record, $example['data'][$index], "{$operationId}.{$index}");
         }
     })->with(fn (): array => array_keys(documentOperations(apiDocument())));

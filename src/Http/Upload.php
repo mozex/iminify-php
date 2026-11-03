@@ -62,7 +62,7 @@ class Upload
         }
 
         if (is_resource($this->source)) {
-            return $this->remainingInResource($this->source);
+            return self::remainingInResource($this->source);
         }
 
         if (! is_string($this->source)) {
@@ -150,7 +150,7 @@ class Upload
     /**
      * @param  resource  $stream
      */
-    protected function remainingInResource(mixed $stream): ?int
+    protected static function remainingInResource(mixed $stream): ?int
     {
         $position = @ftell($stream);
 

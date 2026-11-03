@@ -38,7 +38,7 @@ class WebhookEvent
      */
     public static function fromPayload(string $payload): self
     {
-        return self::read(function () use ($payload): self {
+        return self::parse(function () use ($payload): self {
             $attributes = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
 
             return new self(
@@ -57,7 +57,7 @@ class WebhookEvent
     public function image(): ?Image
     {
         return in_array($this->type, [WebhookEventType::ImageCompleted, WebhookEventType::ImageFailed, WebhookEventType::ImageResponsiveFinished], true)
-            ? self::read(fn (): Image => Image::from($this->data))
+            ? self::parse(fn (): Image => Image::from($this->data))
             : null;
     }
 
@@ -67,7 +67,7 @@ class WebhookEvent
     public function scan(): ?Scan
     {
         return in_array($this->type, [WebhookEventType::ScanCompleted, WebhookEventType::ScanFailed], true)
-            ? self::read(fn (): Scan => Scan::from($this->data))
+            ? self::parse(fn (): Scan => Scan::from($this->data))
             : null;
     }
 
@@ -87,7 +87,7 @@ class WebhookEvent
      * @param  Closure(): TRecord  $build
      * @return TRecord
      */
-    protected static function read(Closure $build): mixed
+    protected static function parse(Closure $build): mixed
     {
         try {
             return $build();

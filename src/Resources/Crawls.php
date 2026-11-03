@@ -58,12 +58,13 @@ class Crawls extends ApiResource
 
     /**
      * Reads the crawl until it has stopped and no page or image is still at work, and returns it.
-     * A crawl takes a few minutes, so the default wait is longer than an image's.
+     * A crawl takes a few minutes, so the default wait is longer than an image's. Pass `$until`
+     * to wait for more.
      *
      * `$timeout` is checked between reads, so give the HTTP client a timeout of its own.
      *
      * @param  int  $timeout  in seconds
-     * @param  (Closure(Crawl): bool)|null  $until  for more than that
+     * @param  (Closure(Crawl): bool)|null  $until
      *
      * @throws WaitTimeoutException
      */

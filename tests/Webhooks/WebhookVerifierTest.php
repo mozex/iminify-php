@@ -97,9 +97,9 @@ describe('a signature that holds up', function () {
 });
 
 describe('a signature that does not hold up', function () {
-    it('is refused', function (Closure $signature, ?string $message = null) {
+    it('is refused', function (Closure $signature, string $message) {
         expect(fn () => (new WebhookVerifier(WEBHOOK_SECRET))->verify(WEBHOOK_BODY, $signature(), WEBHOOK_TIME))
-            ->toThrow(InvalidWebhookSignatureException::class, $message ?? '');
+            ->toThrow(InvalidWebhookSignatureException::class, $message);
     })->with([
         'an altered digest' => [fn () => 't='.WEBHOOK_TIME.',v1='.str_repeat('0', 64), 'does not match'],
         'a time other than the one signed' => [fn () => 't='.(WEBHOOK_TIME + 1).','.explode(',', signedBody())[1], 'does not match'],

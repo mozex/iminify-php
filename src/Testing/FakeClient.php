@@ -84,8 +84,8 @@ class FakeClient extends Client implements TransporterContract
     }
 
     /**
-     * The calls sent to this address. A `*` in the path stands for one part of it, as in
-     * `images/ * /cancel` written without the spaces.
+     * The calls sent to this address. A `*` in the path stands for one part of it, so
+     * `images/*` matches `images/abc` and not `images/abc/cancel`.
      *
      * @param  (Closure(ApiRequest): bool)|null  $callback  for what else the call has to be
      * @return list<ApiRequest>

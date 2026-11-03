@@ -78,7 +78,7 @@ class Crawl
             $attributes['saved_bytes'] ?? null,
             $attributes['saved_percent'] ?? null,
             $attributes['download_url'] ?? null,
-            isset($attributes['pages']) ? array_values(array_map(fn (array $page): CrawlPage => CrawlPage::from($page), $attributes['pages'])) : null,
+            isset($attributes['pages']) ? array_values(array_map(CrawlPage::from(...), $attributes['pages'])) : null,
             isset($attributes['audit']) ? CrawlAudit::from($attributes['audit']) : null,
             Read::date($attributes['created_at'] ?? null),
             Read::date($attributes['updated_at'] ?? null),

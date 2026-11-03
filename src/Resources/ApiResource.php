@@ -141,7 +141,10 @@ abstract class ApiResource
     {
         $response = $this->transporter->send($request);
 
-        return $this->parse(fn (): array => array_values(array_map(fn (array $record): mixed => $from($record, $response->rateLimit()), $response->data())));
+        return $this->parse(fn (): array => array_values(array_map(
+            fn (array $record): mixed => $from($record, $response->rateLimit()),
+            $response->data(),
+        )));
     }
 
     protected function file(ApiRequest $request): Download

@@ -29,11 +29,11 @@ class WebhookVerifier
         protected int $tolerance = 300,
     ) {
         if ($secret === '') {
-            throw new InvalidArgumentException('A webhook signing secret is required. It\'s shown under Settings > Webhooks when the address is saved.');
+            throw new InvalidArgumentException("A webhook signing secret is required. It's shown under Settings > Webhooks when the address is saved.");
         }
 
         if ($tolerance < 0) {
-            throw new InvalidArgumentException('The tolerance is a number of seconds, so it can\'t be negative.');
+            throw new InvalidArgumentException("The tolerance is a number of seconds, so it can't be negative.");
         }
     }
 
@@ -77,9 +77,9 @@ class WebhookVerifier
      */
     public function sign(string $payload, ?int $timestamp = null): string
     {
-        $timestamp = (string) ($timestamp ?? time());
+        $time = (string) ($timestamp ?? time());
 
-        return "t={$timestamp},v1={$this->digest($timestamp, $payload)}";
+        return "t={$time},v1={$this->digest($time, $payload)}";
     }
 
     /**

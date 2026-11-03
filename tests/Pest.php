@@ -61,15 +61,7 @@ function apiDocument(): array
  */
 function apiExample(string $operationId, int $status): array
 {
-    foreach (apiDocument()['paths'] as $operations) {
-        foreach ($operations as $operation) {
-            if (($operation['operationId'] ?? null) === $operationId) {
-                return $operation['responses'][$status]['content']['application/json']['example'];
-            }
-        }
-    }
-
-    throw new RuntimeException("The document has no operation {$operationId}.");
+    return documentOperations(apiDocument())[$operationId]['operation']['responses'][$status]['content']['application/json']['example'];
 }
 
 /**

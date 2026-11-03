@@ -50,7 +50,7 @@ class Group
             GroupSource::from($attributes['source'] ?? null),
             GroupSettings::from($attributes['settings'] ?? null),
             $attributes['files'] ?? null,
-            array_values(array_map(fn (array $output): GroupOutput => GroupOutput::from($output), $attributes['outputs'] ?? null)),
+            array_values(array_map(GroupOutput::from(...), $attributes['outputs'] ?? null)),
             isset($attributes['alt_text']) ? AltText::from($attributes['alt_text']) : null,
             $attributes['download_url'] ?? null,
             Read::date($attributes['created_at'] ?? null),

@@ -42,7 +42,7 @@ class ScanAudit
             $attributes['oversized_bytes'] ?? null,
             $attributes['bytes'] ?? null,
             Read::byFormat($attributes['formats'] ?? null, 'count'),
-            array_values(array_map(fn (array $image): AuditImage => AuditImage::from($image), $attributes['images'] ?? null)),
+            array_values(array_map(AuditImage::from(...), $attributes['images'] ?? null)),
         );
     }
 }

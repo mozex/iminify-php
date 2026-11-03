@@ -43,7 +43,7 @@ describe('a weekly check', function () {
     })->with([
         'no id' => [array_diff_key(Fixtures::monitor(), ['id' => true])],
         'no next run' => [array_diff_key(Fixtures::monitor(), ['next_run_at' => true])],
-        'a run without its status' => [Fixtures::monitor(['last_run' => array_diff_key(Fixtures::monitor()['last_run'], ['id' => true])])],
+        'a run without its id' => [Fixtures::monitor(['last_run' => array_diff_key(Fixtures::monitor()['last_run'], ['id' => true])])],
         'an empty date, which PHP alone reads as now' => [Fixtures::monitor(['created_at' => ''])],
         'a relative date' => [Fixtures::monitor(['next_run_at' => 'tomorrow'])],
     ]);
