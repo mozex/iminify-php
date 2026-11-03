@@ -9,6 +9,7 @@ use Mozex\Iminify\Contracts\TransporterContract;
 use Mozex\Iminify\Resources\Account;
 use Mozex\Iminify\Resources\Groups;
 use Mozex\Iminify\Resources\Images;
+use Mozex\Iminify\Resources\Scans;
 
 class Client
 {
@@ -28,6 +29,11 @@ class Client
     public function groups(): Groups
     {
         return new Groups($this->transporter, $this->sleep);
+    }
+
+    public function scans(): Scans
+    {
+        return new Scans($this->transporter, $this->sleep);
     }
 
     public function account(): Account
