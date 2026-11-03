@@ -43,16 +43,16 @@ class Page implements Countable, IteratorAggregate
      */
     public static function from(array $body, Closure $item, ?RateLimit $rateLimit = null): self
     {
-        $meta = $body['meta'] ?? [];
-        $currentPage = $meta['current_page'] ?? 1;
-        $lastPage = $meta['last_page'] ?? $currentPage;
+        $meta = $body['meta'] ?? null;
+        $currentPage = $meta['current_page'] ?? null;
+        $lastPage = $meta['last_page'] ?? null;
 
         return new self(
             array_values(array_map(fn (array $attributes) => $item($attributes), $body['data'] ?? null)),
             $currentPage,
             $lastPage,
-            $meta['per_page'] ?? 0,
-            $meta['total'] ?? 0,
+            $meta['per_page'] ?? null,
+            $meta['total'] ?? null,
             $currentPage < $lastPage ? $currentPage + 1 : null,
             $rateLimit ?? new RateLimit,
             $body,

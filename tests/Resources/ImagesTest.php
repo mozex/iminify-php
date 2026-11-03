@@ -166,6 +166,7 @@ describe('the calls on one image', function () {
         'a date that is none' => [Fixtures::image(['updated_at' => 'yesterday-ish'])],
         'an empty date, which PHP alone reads as now' => [Fixtures::image(['created_at' => ''])],
         'a relative date' => [Fixtures::image(['updated_at' => 'tomorrow'])],
+        'a date with more after it' => [Fixtures::image(['updated_at' => '2026-10-01T09:30:00+00:00 +1 year'])],
     ]);
 
     it('ends a list it cannot read in its own exception too', function () {

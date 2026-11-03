@@ -138,12 +138,16 @@ describe('a page', function () {
     });
 
     it('has no next page on the last one, or on an empty list', function () {
-        $last = Page::from(['data' => [], 'meta' => ['current_page' => 3, 'last_page' => 3]], Image::from(...));
-        $empty = Page::from(['data' => []], Image::from(...));
+        $last = Page::from(Fixtures::page([], 3, 3), Image::from(...));
+        $empty = Page::from(Fixtures::page([]), Image::from(...));
 
         expect($last->nextPage)->toBeNull()
             ->and($empty->nextPage)->toBeNull()
             ->and($empty->items)->toBe([])
             ->and($empty->total)->toBe(0);
+    });
+
+    it('fails on a list with no paging, rather than read it as one page of nothing', function () {
+        expect(fn () => Page::from(['data' => []], Image::from(...)))->toThrow(TypeError::class);
     });
 });
