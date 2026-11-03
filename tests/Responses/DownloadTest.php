@@ -208,6 +208,21 @@ describe('saving a download', function () {
         }
     });
 
+    it('keeps its own refusal when a framework turns the refused move into an exception', function () {
+        $path = $this->folder.'/photo.webp';
+        mkdir($path);
+        set_error_handler(function (int $level, string $message): bool {
+            throw new ErrorException($message);
+        });
+
+        try {
+            expect(fn () => downloadOf('new')->saveTo($path))->toThrow(IminifyException::class, "can't be saved");
+        } finally {
+            restore_error_handler();
+            rmdir($path);
+        }
+    });
+
     it('fails in its own exception when a framework turns warnings into exceptions', function () {
         $readOnly = fopen('php://memory', 'rb');
         set_error_handler(function (int $level, string $message): bool {

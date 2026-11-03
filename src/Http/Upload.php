@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mozex\Iminify\Http;
 
+use ErrorException;
 use InvalidArgumentException;
 use Mozex\Iminify\Exceptions\TransportException;
 use Psr\Http\Message\StreamInterface;
@@ -74,6 +75,7 @@ class Upload
             return strlen($this->source);
         }
 
+        clearstatcache(true, $this->source);
         $size = @filesize($this->source);
 
         return $size === false ? null : $size;
@@ -147,7 +149,7 @@ class Upload
             }
         } catch (TransportException $exception) {
             throw $exception;
-        } catch (RuntimeException $exception) {
+        } catch (RuntimeException|ErrorException $exception) {
             throw new TransportException("The file couldn't be read: {$exception->getMessage()}", 0, $exception);
         }
 

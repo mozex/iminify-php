@@ -147,7 +147,11 @@ describe('a page', function () {
             ->and($empty->total)->toBe(0);
     });
 
-    it('fails on a list with no paging, rather than read it as one page of nothing', function () {
-        expect(fn () => Page::from(['data' => []], Image::from(...)))->toThrow(TypeError::class);
-    });
+    it('fails on a list with no paging or only part of it, rather than read it as one page of nothing', function (array $body) {
+        expect(fn () => Page::from($body, Image::from(...)))->toThrow(TypeError::class);
+    })->with([
+        'no paging' => [['data' => []]],
+        'only the page it is' => [['data' => [], 'meta' => ['current_page' => 1]]],
+        'no total' => [['data' => [], 'meta' => ['current_page' => 1, 'last_page' => 1, 'per_page' => 15]]],
+    ]);
 });

@@ -63,5 +63,5 @@ vendor/bin/pest --filter="test name here"   # one test
 
 - `CHANGELOG.md` is generated from GitHub releases by the changelog workflow. Never edit it by hand.
 - The PHP floor is 8.2: no typed class constants (`public const string X`) and no `new Foo()->bar()` without wrapping parentheses. PHPStan's `type_coverage.constant` is 0 for that reason.
-- `spatie/image-optimizer` is only in `suggest`, `require-dev` and `conflict` (below 1.10.0, which has no self-handling optimizers), and `guzzlehttp/guzzle` is dev-only: discovery finds what the app has. `Factory` names Guzzle's class only behind an `instanceof` of something discovery already found. `ArchTest` holds `src/` to that.
+- `spatie/image-optimizer` is only in `suggest`, `require-dev` and `conflict` (below 1.10.0, which has no self-handling optimizers), and `guzzlehttp/guzzle` is dev-only: discovery finds what the app has. `Factory` names Guzzle's client only behind an `instanceof` of something discovery already found. `ArchTest` scans `src/` so nothing else imports what a user may not have; Pest's own `toUse` can't see these names.
 - A change to the docs is checked against the README and this file, and the reverse.

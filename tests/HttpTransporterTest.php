@@ -311,14 +311,15 @@ describe('a successful answer', function () {
 });
 
 describe('an answer that streams', function () {
-    it('ends a connection lost mid-answer in its own exception, on a record and on a refusal', function (int $status) {
-        $body = FnStream::decorate(Utils::streamFor('{}'), ['__toString' => fn (): string => throw new RuntimeException('Connection lost')]);
+    it('ends a connection lost mid-answer in its own exception, on a record and on a refusal', function (int $status, Throwable $failure) {
+        $body = FnStream::decorate(Utils::streamFor('{}'), ['__toString' => fn (): string => throw $failure]);
         $response = new ApiResponse($status, [], $body);
 
         expect(fn () => $status >= 400 ? $response->successful() : $response->json())->toThrow(TransportException::class, 'Connection lost');
     })->with([
-        'a record' => [200],
-        'a refusal' => [500],
+        'a record' => [200, new RuntimeException('Connection lost')],
+        'a refusal' => [500, new RuntimeException('Connection lost')],
+        'a framework turning its warning into an exception' => [200, new ErrorException('Connection lost')],
     ]);
 });
 
@@ -408,6 +409,7 @@ describe('the factory', function () {
         expect(fn () => (new Factory)->withBaseUri($uri))->toThrow(InvalidArgumentException::class, 'base URI');
     })->with([
         'a query' => ['https://example.com/api/v1?x=1'],
+        'a query with no path' => ['https://example.com?x=1'],
         'a fragment' => ['https://example.com/api/v1#top'],
         'a line break' => ["https://example.com/api/v1\n"],
         'a space' => ['https://example.com/api v1'],

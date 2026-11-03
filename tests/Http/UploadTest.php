@@ -17,11 +17,31 @@ describe('copying an upload', function () {
         expect(fn () => Upload::fromStream($stream, 'a.jpg')->copyTo($target))->toThrow(TransportException::class, '5 bytes of the 100');
     });
 
-    it('ends a stream that fails mid-read in its own exception', function () {
-        $stream = FnStream::decorate(Utils::streamFor('bytes'), ['read' => fn (int $length): string => throw new RuntimeException('Disk gone')]);
+    it('ends a stream that fails mid-read in its own exception', function (Throwable $failure) {
+        $stream = FnStream::decorate(Utils::streamFor('bytes'), ['read' => fn (int $length): string => throw $failure]);
         $target = fopen('php://memory', 'r+b');
 
         expect(fn () => Upload::fromStream($stream, 'a.jpg')->copyTo($target))->toThrow(TransportException::class, 'Disk gone');
+    })->with([
+        'the stream itself' => [new RuntimeException('Disk gone')],
+        'a framework turning its warning into an exception' => [new ErrorException('Disk gone')],
+    ]);
+
+    it('says a stream hit a full disk rather than failed to read', function () {
+        expect(fn () => Upload::fromStream(Utils::streamFor('bytes'), 'a.jpg')->copyTo(ShortWriteStream::open()))->toThrow(TransportException::class, 'temporary stream');
+    });
+
+    it('measures a path afresh, as a file written twice would otherwise read its old size', function () {
+        $path = (string) tempnam(sys_get_temp_dir(), 'iminify');
+        file_put_contents($path, 'one');
+        filesize($path);
+        file_put_contents($path, 'something longer');
+
+        try {
+            expect(Upload::fromPath($path, 'a.jpg')->size())->toBe(16);
+        } finally {
+            unlink($path);
+        }
     });
 
     it('stops at a write that comes up short, as on a full disk', function () {

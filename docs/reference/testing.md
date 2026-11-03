@@ -40,7 +40,7 @@ A call with nothing queued throws a `LogicException` naming the call.
 
 ## Fixtures
 
-Each fixture but `maxAccount()`, which the document has no example of, is the example from the API's own document, so pass only the fields your test cares about. What you pass replaces that field whole.
+Each record fixture but `maxAccount()`, which the document has no example of, is the example from the API's own document, so pass only the fields your test cares about. What you pass replaces that field whole.
 
 | Fixture | What it is |
 |---|---|
@@ -49,7 +49,7 @@ Each fixture but `maxAccount()`, which the document has no example of, is the ex
 | `scan()`, `queuedScan()` | A finished page scan, and one just sent |
 | `crawl()`, `queuedCrawl()` | A finished site crawl, and one just sent |
 | `monitor()`, `newMonitor()` | A weekly check that has run, and a new one |
-| `account()`, `maxAccount()` | A free account, and a Max account whose daily limits read null |
+| `account()`, `maxAccount()` | A free account, and a Max account whose daily images, page scans and files read null |
 | `page($records)` | One page of a list |
 | `file()`, `noContent()` | A download, and a delete's response |
 | `refusal($code, $status)` | A refusal, ending in the exception the real one would |

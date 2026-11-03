@@ -91,8 +91,8 @@ class Download
 
     /**
      * Saves the file and returns its size. It lands in one step, through a temporary file beside
-     * the target, so a broken transfer leaves whatever was at the path untouched. A link is
-     * followed. A file it replaces keeps its permissions, and belongs from then on to the user
+     * the target, so a broken transfer leaves whatever was at the path untouched. A link to a
+     * file is followed. A file it replaces keeps its permissions, and belongs from then on to the user
      * PHP runs as, since replacing a file can't keep its owner.
      *
      * @param  int|null  $expectedSize  the bytes it has to come to, such as the `size` the API gave, for an answer that doesn't state its length
@@ -127,7 +127,7 @@ class Download
 
             return $written;
         } finally {
-            $this->quietly(fn (): bool => is_file($temporary) && chmod($temporary, 0600) && unlink($temporary));
+            $this->quietly(fn (): bool => is_file($temporary) && unlink($temporary));
         }
     }
 
@@ -161,8 +161,9 @@ class Download
     }
 
     /**
-     * The permissions are set before the first byte, so a private file's replacement is never
-     * readable by anyone else while it arrives.
+     * The permissions are set before the first byte, so a private file's replacement isn't left
+     * readable by anyone else while it arrives. A flush that fails stops here: the bytes were
+     * only ever in memory, and the file they would replace is still safe.
      */
     protected function writeToFile(string $path, ?int $mode): int
     {
@@ -178,7 +179,10 @@ class Download
             }
 
             $written = $this->writeTo($handle);
-            @fsync($handle);
+
+            if (stream_is_local($handle) && ! @fsync($handle)) {
+                throw new IminifyException("The download can't be saved to [{$path}]: the disk didn't keep it.");
+            }
 
             return $written;
         } finally {
