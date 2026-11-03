@@ -52,6 +52,7 @@ describe('a finished crawl', function () {
             ->and($crawl->status)->toBe(CrawlStatus::Completed)
             ->and($crawl->isFinished())->toBeTrue()
             ->and($crawl->note)->toBeNull()
+            ->and((new FakeClient([Fixtures::crawl(['note' => 'The sitemap could not be read.'])]))->crawls()->get(CRAWL_ID)->note)->toBe('The sitemap could not be read.')
             ->and($crawl->settings->format)->toBe('webp')
             ->and($crawl->pagesCount)->toBe(2)
             ->and($crawl->pagesInProgress)->toBe(0)
@@ -89,8 +90,10 @@ describe('a finished crawl', function () {
     })->with([
         'no id' => [array_diff_key(Fixtures::crawl(), ['id' => true])],
         'no counts' => [array_diff_key(Fixtures::crawl(), ['pages_in_progress' => true])],
-        'a page without its address' => [Fixtures::crawl(['pages' => [['id' => 'a', 'status' => 'completed']]])],
-        'an audit without findings' => [Fixtures::crawl(['audit' => ['pages_audited' => 1]])],
+        'a page without its address' => [Fixtures::crawl(['pages' => [array_diff_key(Fixtures::crawl()['pages'][0], ['url' => true])]])],
+        'an audit without findings' => [Fixtures::crawl(['audit' => array_diff_key(Fixtures::crawl()['audit'], ['findings' => true])])],
+        'an empty date, which PHP alone reads as now' => [Fixtures::crawl(['created_at' => ''])],
+        'a relative date' => [Fixtures::crawl(['updated_at' => 'tomorrow'])],
     ]);
 });
 

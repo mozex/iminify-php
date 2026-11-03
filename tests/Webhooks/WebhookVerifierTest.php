@@ -11,21 +11,12 @@ use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Testing\Fixtures;
 use Mozex\Iminify\Webhooks\WebhookVerifier;
 
-const WEBHOOK_SECRET = 'whsec_TfB2r8vQ';
-const WEBHOOK_TIME = 1761400000;
-const WEBHOOK_BODY = '{"id":"9f1c","type":"ping","created_at":"2026-10-25T10:42:07+00:00","data":[]}';
-
 /*
  * The vector the API's own sender is held to, computed once and checked against Python's hmac
  * and Node's crypto as well, so the two ends can't drift apart unnoticed.
  */
 const FIXED_VECTOR_BODY = '{"id":"9f1c","type":"ping"}';
 const FIXED_VECTOR_DIGEST = '38f9e72dcdf429f3d203c387d4712e009e69d22eeeb8e158508ac8e647ccadb6';
-
-function signedBody(string $body = WEBHOOK_BODY, int $time = WEBHOOK_TIME): string
-{
-    return (new WebhookVerifier(WEBHOOK_SECRET))->sign($body, $time);
-}
 
 describe('a signature that holds up', function () {
     it('matches the fixed vector the sender is held to', function () {
@@ -158,6 +149,8 @@ describe('a body that was signed and does not read', function () {
         'not an object' => ['5'],
         'no id' => ['{"type":"ping","created_at":"2026-10-25T10:42:07+00:00","data":[]}'],
         'no time' => ['{"id":"a","type":"ping","data":[]}'],
+        'an empty time, which PHP alone reads as now' => ['{"id":"a","type":"ping","created_at":"","data":[]}'],
+        'a relative time' => ['{"id":"a","type":"ping","created_at":"tomorrow","data":[]}'],
         'no data' => ['{"id":"a","type":"ping","created_at":"2026-10-25T10:42:07+00:00"}'],
     ]);
 

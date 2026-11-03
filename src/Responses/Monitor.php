@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Responses;
 
 use DateTimeImmutable;
+use Mozex\Iminify\Support\Read;
 
 /**
  * A weekly check of a site, made from one of its crawls.
@@ -48,9 +49,9 @@ class Monitor
             ImageSettings::from($attributes['settings'] ?? null),
             $attributes['emails'] ?? null,
             $attributes['paused'] ?? null,
-            new DateTimeImmutable($attributes['next_run_at'] ?? null),
+            Read::date($attributes['next_run_at'] ?? null),
             isset($attributes['last_run']) ? Crawl::from($attributes['last_run']) : null,
-            new DateTimeImmutable($attributes['created_at'] ?? null),
+            Read::date($attributes['created_at'] ?? null),
             $rateLimit ?? new RateLimit,
             $attributes,
         );

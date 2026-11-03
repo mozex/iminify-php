@@ -7,36 +7,8 @@ use GuzzleHttp\Psr7\Utils;
 use Mozex\Iminify\Exceptions\IminifyException;
 use Mozex\Iminify\Exceptions\TransportException;
 use Mozex\Iminify\Exceptions\UnexpectedResponseException;
-use Mozex\Iminify\Http\ApiResponse;
 use Mozex\Iminify\Responses\Download;
 use Mozex\Iminify\Responses\RateLimit;
-
-/**
- * @param  array<string, string>  $headers
- */
-function downloadOf(string $bytes, array $headers = []): Download
-{
-    return Download::fromResponse(new ApiResponse(200, $headers, Utils::streamFor($bytes)));
-}
-
-function downloadFolder(): string
-{
-    $folder = sys_get_temp_dir().'/iminify-download-'.bin2hex(random_bytes(6));
-    mkdir($folder);
-
-    return $folder;
-}
-
-function removeFolder(string $folder): void
-{
-    foreach (glob($folder.'/{,.}*', GLOB_BRACE) ?: [] as $file) {
-        if (is_file($file)) {
-            unlink($file);
-        }
-    }
-
-    rmdir($folder);
-}
 
 describe('a download', function () {
     it('reads what the answer says about the file', function () {

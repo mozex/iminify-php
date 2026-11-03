@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Mozex\Iminify\Responses;
 
+use Mozex\Iminify\Support\Read;
+
 /**
  * A page's image report: what a browser really received and how the page used it.
  */
@@ -39,7 +41,7 @@ class ScanAudit
             AuditFindings::from($attributes['findings'] ?? null),
             $attributes['oversized_bytes'] ?? null,
             $attributes['bytes'] ?? null,
-            array_column($attributes['formats'] ?? null, 'count', 'format'),
+            Read::byFormat($attributes['formats'] ?? null, 'count'),
             array_values(array_map(fn (array $image): AuditImage => AuditImage::from($image), $attributes['images'] ?? null)),
         );
     }

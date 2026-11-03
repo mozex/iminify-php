@@ -6,6 +6,7 @@ namespace Mozex\Iminify\Responses;
 
 use DateTimeImmutable;
 use Mozex\Iminify\Enums\CrawlStatus;
+use Mozex\Iminify\Support\Read;
 
 /**
  * A whole site scanned page by page, from its sitemap or a list of its pages.
@@ -79,8 +80,8 @@ class Crawl
             $attributes['download_url'] ?? null,
             isset($attributes['pages']) ? array_values(array_map(fn (array $page): CrawlPage => CrawlPage::from($page), $attributes['pages'])) : null,
             isset($attributes['audit']) ? CrawlAudit::from($attributes['audit']) : null,
-            new DateTimeImmutable($attributes['created_at'] ?? null),
-            new DateTimeImmutable($attributes['updated_at'] ?? null),
+            Read::date($attributes['created_at'] ?? null),
+            Read::date($attributes['updated_at'] ?? null),
             $rateLimit ?? new RateLimit,
             $attributes,
         );

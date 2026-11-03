@@ -74,6 +74,8 @@ describe('the account', function () {
     it('reads a plan this version does not know, and refuses an answer it can not read', function () {
         expect((new FakeClient([Fixtures::account(['plan' => 'enterprise'])]))->account()->get()->plan)->toBe(Plan::Unknown)
             ->and(fn () => (new FakeClient([Fixtures::account(['limits' => null])]))->account()->get())->toThrow(UnexpectedResponseException::class)
+            ->and(fn () => (new FakeClient([Fixtures::account(['plan_ends_at' => ''])]))->account()->get())->toThrow(UnexpectedResponseException::class)
+            ->and(fn () => (new FakeClient([Fixtures::account(['usage' => ['images' => ['resets_at' => 'tomorrow', 'used' => 1, 'remaining' => 1]] + Fixtures::account()['usage']])]))->account()->get())->toThrow(UnexpectedResponseException::class)
             ->and(fn () => (new FakeClient([array_diff_key(Fixtures::account(), ['name' => true])]))->account()->get())->toThrow(UnexpectedResponseException::class);
     });
 });

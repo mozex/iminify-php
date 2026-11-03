@@ -6,6 +6,7 @@ namespace Mozex\Iminify\Responses;
 
 use DateTimeImmutable;
 use Mozex\Iminify\Enums\GroupStatus;
+use Mozex\Iminify\Support\Read;
 
 /**
  * One image and every size and format made from it, counted as one image.
@@ -45,15 +46,15 @@ class Group
             $attributes['id'] ?? null,
             $attributes['name'] ?? null,
             GroupStatus::tryFrom($attributes['status'] ?? null) ?? GroupStatus::Unknown,
-            isset($attributes['upload_by']) ? new DateTimeImmutable($attributes['upload_by']) : null,
+            isset($attributes['upload_by']) ? Read::date($attributes['upload_by']) : null,
             GroupSource::from($attributes['source'] ?? null),
             GroupSettings::from($attributes['settings'] ?? null),
             $attributes['files'] ?? null,
             array_values(array_map(fn (array $output): GroupOutput => GroupOutput::from($output), $attributes['outputs'] ?? null)),
             isset($attributes['alt_text']) ? AltText::from($attributes['alt_text']) : null,
             $attributes['download_url'] ?? null,
-            new DateTimeImmutable($attributes['created_at'] ?? null),
-            isset($attributes['received_at']) ? new DateTimeImmutable($attributes['received_at']) : null,
+            Read::date($attributes['created_at'] ?? null),
+            isset($attributes['received_at']) ? Read::date($attributes['received_at']) : null,
             $rateLimit ?? new RateLimit,
             $attributes,
         );

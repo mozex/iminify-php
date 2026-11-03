@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Mozex\Iminify\Responses;
 
+use Mozex\Iminify\Support\Read;
+
 /**
  * One image address in a page's report, in the page's order.
  */
@@ -60,7 +62,7 @@ class AuditImage
             $attributes['outcome'] ?? null,
             $attributes['skip_reason'] ?? null,
             $attributes['image_id'] ?? null,
-            isset($attributes['format_sizes']) ? array_column($attributes['format_sizes'], 'bytes', 'format') : null,
+            isset($attributes['format_sizes']) ? Read::byFormat($attributes['format_sizes'], 'bytes') : null,
             $attributes['suggested_alt'] ?? null,
         );
     }

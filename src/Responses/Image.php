@@ -7,6 +7,7 @@ namespace Mozex\Iminify\Responses;
 use DateTimeImmutable;
 use Mozex\Iminify\Enums\ImageStatus;
 use Mozex\Iminify\Enums\SizeLimitStatus;
+use Mozex\Iminify\Support\Read;
 
 /**
  * One compression: the file sent, the settings it was sent with and, once it has finished,
@@ -62,8 +63,8 @@ class Image
             $attributes['source_url'] ?? null,
             $attributes['folder'] ?? null,
             $attributes['share_url'] ?? null,
-            new DateTimeImmutable($attributes['created_at'] ?? null),
-            new DateTimeImmutable($attributes['updated_at'] ?? null),
+            Read::date($attributes['created_at'] ?? null),
+            Read::date($attributes['updated_at'] ?? null),
             $rateLimit ?? new RateLimit,
             $attributes,
         );

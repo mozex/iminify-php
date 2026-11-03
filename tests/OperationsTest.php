@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use GuzzleHttp\Psr7\Response;
 use Mozex\Iminify\Client;
 use Mozex\Iminify\Enums\AltTextStatus;
 use Mozex\Iminify\Enums\CompressionLevel;
@@ -18,13 +17,14 @@ use Mozex\Iminify\Enums\Priority;
 use Mozex\Iminify\Enums\ResponsiveStatus;
 use Mozex\Iminify\Enums\ScanStatus;
 use Mozex\Iminify\Enums\SizeLimitStatus;
-use Mozex\Iminify\Http\Upload;
 use Mozex\Iminify\Iminify;
 use Mozex\Iminify\Responses\Account;
 use Mozex\Iminify\Responses\AccountLimits;
 use Mozex\Iminify\Responses\AccountUsage;
+use Mozex\Iminify\Responses\AltText;
 use Mozex\Iminify\Responses\AuditFindings;
 use Mozex\Iminify\Responses\AuditImage;
+use Mozex\Iminify\Responses\ContentCredentials;
 use Mozex\Iminify\Responses\Crawl;
 use Mozex\Iminify\Responses\CrawlAudit;
 use Mozex\Iminify\Responses\CrawlPage;
@@ -45,132 +45,6 @@ use Mozex\Iminify\Responses\ScanAudit;
 use Mozex\Iminify\Responses\SkippedImage;
 use Mozex\Iminify\Responses\Usage;
 use Mozex\Iminify\Tests\Fakes\RecordingHttpClient;
-
-const OPERATION_RECORD = 'b2f7c1d0-0000-4000-8000-000000000001';
-const OPERATION_WIDTH = 480;
-
-/**
- * How the client calls each operation of the API's document.
- *
- * @return array<string, Closure(Client): mixed>
- */
-function clientOperations(): array
-{
-    $id = OPERATION_RECORD;
-
-    return [
-        'listImages' => fn (Client $client) => $client->images()->list(),
-        'createImage' => fn (Client $client) => $client->images()->fromUrl('https://example.com/a.jpg'),
-        'getImage' => fn (Client $client) => $client->images()->get($id),
-        'renameImage' => fn (Client $client) => $client->images()->rename($id, 'a'),
-        'deleteImage' => fn (Client $client) => $client->images()->delete($id),
-        'downloadImage' => fn (Client $client) => $client->images()->download($id),
-        'downloadResponsiveImage' => fn (Client $client) => $client->images()->downloadResponsive($id, OPERATION_WIDTH),
-        'downloadResponsiveImages' => fn (Client $client) => $client->images()->downloadResponsiveZip($id),
-        'recompressImage' => fn (Client $client) => $client->images()->recompress($id),
-        'retryImage' => fn (Client $client) => $client->images()->retry($id),
-        'cancelImage' => fn (Client $client) => $client->images()->cancel($id),
-        'writeAltText' => fn (Client $client) => $client->images()->writeAltText($id),
-        'shareImage' => fn (Client $client) => $client->images()->share($id),
-        'unshareImage' => fn (Client $client) => $client->images()->unshare($id),
-        'renameImages' => fn (Client $client) => $client->images()->renameMany([$id], 'a'),
-        'downloadImages' => fn (Client $client) => $client->images()->downloadMany([$id]),
-
-        'listScans' => fn (Client $client) => $client->scans()->list(),
-        'createScan' => fn (Client $client) => $client->scans()->create('https://example.com/'),
-        'getScan' => fn (Client $client) => $client->scans()->get($id),
-        'deleteScan' => fn (Client $client) => $client->scans()->delete($id),
-        'retryScan' => fn (Client $client) => $client->scans()->retry($id),
-        'cancelScan' => fn (Client $client) => $client->scans()->cancel($id),
-        'downloadScan' => fn (Client $client) => $client->scans()->download($id),
-        'shareScanReport' => fn (Client $client) => $client->scans()->share($id),
-        'unshareScanReport' => fn (Client $client) => $client->scans()->unshare($id),
-        'downloadScanReportCsv' => fn (Client $client) => $client->scans()->downloadReportCsv($id),
-        'downloadScanReportPdf' => fn (Client $client) => $client->scans()->downloadReportPdf($id),
-
-        'createGroup' => fn (Client $client) => $client->groups()->create([
-            'name' => 'a',
-            'source' => ['format' => 'jpg', 'size' => 1, 'width' => 1, 'height' => 1],
-            'outputs' => [['name' => 'a', 'width' => 1, 'height' => 1]],
-        ]),
-        'sendGroupSource' => fn (Client $client) => $client->groups()->sendSource($id, Upload::fromContents('a', 'a.jpg')),
-        'getGroup' => fn (Client $client) => $client->groups()->get($id),
-        'deleteGroup' => fn (Client $client) => $client->groups()->delete($id),
-        'downloadGroup' => fn (Client $client) => $client->groups()->download($id),
-
-        'listCrawls' => fn (Client $client) => $client->crawls()->list(),
-        'createCrawl' => fn (Client $client) => $client->crawls()->fromSitemap('https://example.com/sitemap.xml'),
-        'getCrawl' => fn (Client $client) => $client->crawls()->get($id),
-        'deleteCrawl' => fn (Client $client) => $client->crawls()->delete($id),
-        'downloadCrawl' => fn (Client $client) => $client->crawls()->download($id),
-
-        'listMonitors' => fn (Client $client) => $client->monitors()->list(),
-        'createMonitor' => fn (Client $client) => $client->monitors()->create($id),
-        'getMonitor' => fn (Client $client) => $client->monitors()->get($id),
-        'updateMonitor' => fn (Client $client) => $client->monitors()->update($id, ['emails' => false]),
-        'deleteMonitor' => fn (Client $client) => $client->monitors()->delete($id),
-
-        'getAccount' => fn (Client $client) => $client->account()->get(),
-    ];
-}
-
-/**
- * Every operation the document names, each with its verb and path.
- *
- * @param  array<string, mixed>  $document
- * @return array<string, array{method: string, path: string, operation: array<string, mixed>}>
- */
-function documentOperations(array $document): array
-{
-    $operations = [];
-
-    foreach ($document['paths'] as $path => $methods) {
-        foreach ($methods as $method => $operation) {
-            if (isset($operation['operationId'])) {
-                $operations[$operation['operationId']] = ['method' => strtoupper($method), 'path' => $path, 'operation' => $operation];
-            }
-        }
-    }
-
-    return $operations;
-}
-
-/**
- * What the map and the document disagree on, each list sorted.
- *
- * @param  array<string, mixed>  $document
- * @param  array<string, mixed>  $map
- * @return array{missing: list<string>, stale: list<string>}
- */
-function operationsGap(array $document, array $map): array
-{
-    $documented = array_keys(documentOperations($document));
-    $mapped = array_keys($map);
-
-    $missing = array_values(array_diff($documented, $mapped));
-    $stale = array_values(array_diff($mapped, $documented));
-    sort($missing);
-    sort($stale);
-
-    return ['missing' => $missing, 'stale' => $stale];
-}
-
-/**
- * The first success the document gives an operation: its status and, for a JSON answer, its example.
- *
- * @param  array<string, mixed>  $operation
- * @return array{0: int, 1: array<array-key, mixed>|null}
- */
-function documentedSuccess(array $operation): array
-{
-    foreach ($operation['responses'] as $status => $response) {
-        if ($status < 300) {
-            return [$status, $response['content']['application/json']['example'] ?? null];
-        }
-    }
-
-    throw new RuntimeException('The operation has no success.');
-}
 
 describe('the operation map', function () {
     it('covers every operation in the document, and none it no longer has', function () {
@@ -195,9 +69,7 @@ describe('the operation map', function () {
     it('sends each to the document\'s verb and path, and reads the document\'s answer', function (string $operationId) {
         $documented = documentOperations(apiDocument())[$operationId];
         [$status, $example] = documentedSuccess($documented['operation']);
-        $http = new RecordingHttpClient([
-            $example === null ? new Response($status, [], $status === 204 ? '' : 'the-file') : jsonResponse($example, $status),
-        ]);
+        $http = new RecordingHttpClient([documentedAnswer($documented['operation'])]);
 
         $result = clientOperations()[$operationId](clientAnswering($http));
 
@@ -211,16 +83,47 @@ describe('the operation map', function () {
             $status === 204 => expect($result)->toBeNull(),
             $example === null => expect($result)->toBeInstanceOf(Download::class)
                 ->and($result->contents())->toBe('the-file'),
-            $result instanceof Page => expect($result->toArray())->toBe($example)
+            $result instanceof Page => expect($example['meta'])->toHaveKeys(['current_page', 'last_page', 'per_page', 'total'])
+                ->and($result->currentPage)->toBe($example['meta']['current_page'])
+                ->and($result->lastPage)->toBe($example['meta']['last_page'])
+                ->and($result->perPage)->toBe($example['meta']['per_page'])
+                ->and($result->total)->toBe($example['meta']['total'])
                 ->and($result->items)->toHaveCount(count($example['data'])),
-            is_array($result) => expect(array_map(fn (object $record): array => $record->toArray(), $result))->toBe($example['data']),
-            default => expect($result->toArray())->toBe($example['data']),
+            is_array($result) => expect($result)->toHaveCount(count($example['data'])),
+            default => expectReadAs($result, $example['data'], $operationId),
         };
 
-        foreach ($documented['operation']['requestBody']['content']['application/json']['schema']['required'] ?? [] as $field) {
-            expect(json_decode((string) $http->requests[0]->getBody(), true))->toHaveKey($field);
+        foreach (is_array($result) ? $result : ($result instanceof Page ? $result->items : []) as $index => $record) {
+            expectReadAs($record, $example['data'][$index], "{$operationId}.{$index}");
         }
     })->with(fn (): array => array_keys(documentOperations(apiDocument())));
+
+    it('builds every field the document requires of a body', function (string $operationId) {
+        $documented = documentOperations(apiDocument())[$operationId];
+        $http = new RecordingHttpClient([documentedAnswer($documented['operation'])]);
+
+        clientOperations()[$operationId](clientAnswering($http));
+
+        $body = json_decode((string) $http->requests[0]->getBody(), true);
+
+        foreach (documentedRequiredFields($documented['operation']) as $field) {
+            expect(array_key_exists($field, $body))->toBeTrue("{$operationId} sends no `{$field}`.");
+        }
+    })->with(fn (): array => array_values(array_diff(
+        array_keys(array_filter(documentOperations(apiDocument()), fn (array $documented): bool => documentedRequiredFields($documented['operation']) !== [])),
+        // These two hand the client their whole body, so the document's fields are the caller's to send.
+        ['createGroup', 'updateMonitor'],
+    )));
+
+    it('keeps an id from reaching another address, on every path that takes one', function (string $operationId) {
+        $documented = documentOperations(apiDocument())[$operationId];
+        $http = new RecordingHttpClient([documentedAnswer($documented['operation'])]);
+
+        clientOperations('../account')[$operationId](clientAnswering($http));
+
+        expect($http->requests[0]->getUri()->getPath())
+            ->toBe('/api/v1'.str_replace(['{id}', '{width}'], ['..%2Faccount', (string) OPERATION_WIDTH], $documented['path']));
+    })->with(fn (): array => array_keys(array_filter(documentOperations(apiDocument()), fn (array $documented): bool => str_contains($documented['path'], '{id}'))));
 
     it('names the address the document serves the API at', function () {
         expect(apiDocument()['servers'][0]['url'])->toBe(Iminify::BASE_URI);
@@ -256,7 +159,7 @@ describe('what the client reads', function () {
         expect(array_values(array_diff(apiDocument()['components']['schemas']['Account']['properties']['plan']['enum'], $values)))->toBe([]);
     });
 
-    it('has a property for every field the document gives a record', function (string $class, array $path) {
+    it('has a property for every field the document gives a record, null only where the document allows it', function (string $class, array $path) {
         $schema = apiDocument()['components']['schemas'];
 
         foreach ($path as $key) {
@@ -266,13 +169,17 @@ describe('what the client reads', function () {
         expect($schema['properties'] ?? [])->not->toBe([]);
 
         foreach (array_keys($schema['properties']) as $field) {
-            $property = lcfirst(str_replace('_', '', ucwords($field, '_')));
+            $property = camelCase($field);
 
-            expect(property_exists($class, $property))->toBeTrue("{$class} has no property for `{$field}`.");
+            expect(property_exists($class, $property))->toBeTrue("{$class} has no property for `{$field}`.")
+                ->and((new ReflectionProperty($class, $property))->getType()?->allowsNull())
+                ->toBe(documentAllowsNull($schema, $field), "{$class}::\${$property} and the document's `{$field}` disagree on null.");
         }
     })->with([
         [Image::class, ['Image']],
         [ImageFile::class, ['Image', 'properties', 'original']],
+        [AltText::class, ['Image', 'properties', 'alt_text']],
+        [ContentCredentials::class, ['Image', 'properties', 'content_credentials']],
         [ImageSettings::class, ['Image', 'properties', 'settings']],
         [ResponsiveSet::class, ['Image', 'properties', 'responsive']],
         [Scan::class, ['Scan']],

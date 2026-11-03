@@ -8,10 +8,10 @@ use Closure;
 use DateTimeImmutable;
 use Exception;
 use Mozex\Iminify\Enums\WebhookEventType;
-use Mozex\Iminify\Exceptions\IminifyException;
 use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Responses\Image;
 use Mozex\Iminify\Responses\Scan;
+use Mozex\Iminify\Support\Read;
 use TypeError;
 
 /**
@@ -44,7 +44,7 @@ class WebhookEvent
             return new self(
                 $attributes['id'] ?? null,
                 WebhookEventType::tryFrom($attributes['type'] ?? null) ?? WebhookEventType::Unknown,
-                new DateTimeImmutable($attributes['created_at'] ?? null),
+                Read::date($attributes['created_at'] ?? null),
                 $attributes['data'] ?? null,
                 $attributes,
             );
@@ -91,8 +91,6 @@ class WebhookEvent
     {
         try {
             return $build();
-        } catch (IminifyException $exception) {
-            throw $exception;
         } catch (TypeError|Exception $exception) {
             throw UnexpectedResponseException::unreadable($exception);
         }

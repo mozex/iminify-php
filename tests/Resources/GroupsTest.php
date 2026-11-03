@@ -147,7 +147,10 @@ describe('a finished group', function () {
         'no id' => [array_diff_key(Fixtures::group(), ['id' => true])],
         'no source' => [array_diff_key(Fixtures::group(), ['source' => true])],
         'no outputs' => [array_diff_key(Fixtures::group(), ['outputs' => true])],
-        'an output without its name' => [Fixtures::group(['outputs' => [['format' => 'webp', 'status' => 'completed', 'replace' => true]]])],
+        'an output without its name' => [Fixtures::group(['outputs' => [array_diff_key(Fixtures::group()['outputs'][0], ['name' => true])]])],
+        'an empty date, which PHP alone reads as now' => [Fixtures::group(['created_at' => ''])],
+        'a relative date' => [Fixtures::group(['received_at' => 'tomorrow'])],
+        'an empty deadline' => [Fixtures::openGroup(['upload_by' => ''])],
     ]);
 
     it('downloads its zip and deletes it', function () {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Responses;
 
 use DateTimeImmutable;
+use Mozex\Iminify\Support\Read;
 
 /**
  * How much of one daily limit is gone. The window is a rolling 24 hours from the first use.
@@ -29,7 +30,7 @@ class Usage
         return new self(
             $attributes['used'] ?? null,
             $attributes['remaining'] ?? null,
-            isset($attributes['resets_at']) ? new DateTimeImmutable($attributes['resets_at']) : null,
+            isset($attributes['resets_at']) ? Read::date($attributes['resets_at']) : null,
         );
     }
 

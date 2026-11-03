@@ -117,6 +117,16 @@ describe('a finished scan', function () {
         expect($scan->audit?->images[0]->formatSizes)->toBe(['webp' => 90, 'avif' => 60]);
     });
 
+    it('reads what the document\'s example leaves null, when it is there', function () {
+        $audit = Fixtures::scan()['audit'];
+        $audit['images'][0]['suggested_alt'] = 'A team at a table';
+        $scan = (new FakeClient([Fixtures::scan(['crawl_id' => 'a-crawl', 'share_url' => 'https://www.iminify.com/shared/abc', 'audit' => $audit])]))->scans()->get(SCAN_ID);
+
+        expect($scan->crawlId)->toBe('a-crawl')
+            ->and($scan->shareUrl)->toEndWith('/shared/abc')
+            ->and($scan->audit?->images[0]->suggestedAlt)->toBe('A team at a table');
+    });
+
     it('reads a page no browser found a largest paint on', function () {
         $audit = ['largest_paint' => null] + Fixtures::scan()['audit'];
         $scan = (new FakeClient([Fixtures::scan(['audit' => $audit])]))->scans()->get(SCAN_ID);
@@ -131,8 +141,13 @@ describe('a finished scan', function () {
         'no counts' => [array_diff_key(Fixtures::scan(), ['images_in_progress' => true])],
         'no settings' => [array_diff_key(Fixtures::scan(), ['settings' => true])],
         'skipped missing' => [array_diff_key(Fixtures::scan(), ['skipped' => true])],
-        'an audit without findings' => [Fixtures::scan(['audit' => ['rendered' => true]])],
-        'a skipped image without its reason' => [Fixtures::scan(['skipped' => [['url' => 'https://example.com/a.png']]])],
+        'an audit without findings' => [Fixtures::scan(['audit' => array_diff_key(Fixtures::scan()['audit'], ['findings' => true])])],
+        'a skipped image without its reason' => [Fixtures::scan(['skipped' => [array_diff_key(Fixtures::scan()['skipped'][0], ['reason' => true])]])],
+        'an empty date, which PHP alone reads as now' => [Fixtures::scan(['created_at' => ''])],
+        'a relative date' => [Fixtures::scan(['updated_at' => 'tomorrow'])],
+        'a format count that is no row' => [Fixtures::scan(['audit' => ['formats' => [1, 2]] + Fixtures::scan()['audit']])],
+        'a format count without its number' => [Fixtures::scan(['audit' => ['formats' => [['format' => 'webp']]] + Fixtures::scan()['audit']])],
+        'a format size without its bytes' => [Fixtures::scan(['audit' => ['images' => [['format_sizes' => [['format' => 'webp']]] + Fixtures::scan()['audit']['images'][0]]] + Fixtures::scan()['audit']])],
     ]);
 });
 

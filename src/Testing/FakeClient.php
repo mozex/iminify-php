@@ -69,7 +69,7 @@ class FakeClient extends Client implements TransporterContract
         return match (true) {
             $answer instanceof Throwable => throw $answer,
             $answer instanceof ApiResponse => $answer->successful(),
-            default => Fixtures::answer(array_key_exists('data', $answer) ? $answer : ['data' => $answer])->successful(),
+            default => Fixtures::answer(array_key_exists('data', $answer) ? $answer : ['data' => $answer]),
         };
     }
 

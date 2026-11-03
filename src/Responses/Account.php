@@ -6,6 +6,7 @@ namespace Mozex\Iminify\Responses;
 
 use DateTimeImmutable;
 use Mozex\Iminify\Enums\Plan;
+use Mozex\Iminify\Support\Read;
 
 /**
  * The key's account: its plan, what the plan allows, and how much of the day's allowance is gone.
@@ -36,7 +37,7 @@ class Account
             $attributes['name'] ?? null,
             $attributes['email'] ?? null,
             Plan::tryFrom($attributes['plan'] ?? null) ?? Plan::Unknown,
-            isset($attributes['plan_ends_at']) ? new DateTimeImmutable($attributes['plan_ends_at']) : null,
+            isset($attributes['plan_ends_at']) ? Read::date($attributes['plan_ends_at']) : null,
             AccountLimits::from($attributes['limits'] ?? null),
             AccountUsage::from($attributes['usage'] ?? null),
             $rateLimit ?? new RateLimit,

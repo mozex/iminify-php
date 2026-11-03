@@ -6,6 +6,7 @@ namespace Mozex\Iminify\Responses;
 
 use DateTimeImmutable;
 use Mozex\Iminify\Enums\ScanStatus;
+use Mozex\Iminify\Support\Read;
 
 /**
  * One web page scanned for every image it loads.
@@ -74,8 +75,8 @@ class Scan
             isset($attributes['images']) ? array_values(array_map(fn (array $image): Image => Image::from($image), $attributes['images'])) : null,
             isset($attributes['audit']) ? ScanAudit::from($attributes['audit']) : null,
             $attributes['share_url'] ?? null,
-            new DateTimeImmutable($attributes['created_at'] ?? null),
-            new DateTimeImmutable($attributes['updated_at'] ?? null),
+            Read::date($attributes['created_at'] ?? null),
+            Read::date($attributes['updated_at'] ?? null),
             $rateLimit ?? new RateLimit,
             $attributes,
         );

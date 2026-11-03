@@ -25,35 +25,6 @@ use Psr\Http\Message\RequestInterface;
 const IMAGE_ID = '9d3c5b8e-6f0a-4c1e-9b7d-2a4e8f1c6b35';
 const IMAGES_URL = 'https://www.iminify.com/api/v1/images';
 
-/**
- * The form fields of a multipart body, by name.
- *
- * @return array<string, list<string>>
- */
-function formFields(string $body): array
-{
-    preg_match_all('/name="([^"]+)"\r\n\r\n(.*?)\r\n/s', $body, $matches, PREG_SET_ORDER);
-    $fields = [];
-
-    foreach ($matches as [, $name, $value]) {
-        $fields[$name][] = $value;
-    }
-
-    return $fields;
-}
-
-/**
- * @return array{0: Closure(float): void, 1: ArrayObject<int, float>}
- */
-function recordingSleep(): array
-{
-    $slept = new ArrayObject;
-
-    return [function (float $seconds) use ($slept): void {
-        $slept->append($seconds);
-    }, $slept];
-}
-
 describe('sending an image', function () {
     it('uploads a path with its options and answers the queued image', function () {
         $path = tempnam(sys_get_temp_dir(), 'iminify').'.jpg';
@@ -193,6 +164,8 @@ describe('the calls on one image', function () {
         'a number as text' => [Fixtures::image(['saved_bytes' => 'many'])],
         'no date' => [array_diff_key(Fixtures::image(), ['created_at' => true])],
         'a date that is none' => [Fixtures::image(['updated_at' => 'yesterday-ish'])],
+        'an empty date, which PHP alone reads as now' => [Fixtures::image(['created_at' => ''])],
+        'a relative date' => [Fixtures::image(['updated_at' => 'tomorrow'])],
     ]);
 
     it('ends a list it cannot read in its own exception too', function () {
