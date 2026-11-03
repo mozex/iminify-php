@@ -33,7 +33,7 @@ class Images extends ApiResource
     {
         $response = $this->transporter->send(ApiRequest::get('images', $query));
 
-        return Page::from($response->json(), fn (array $image): Image => Image::from($image), $response->rateLimit());
+        return $this->parse(fn (): Page => Page::from($response->json(), fn (array $image): Image => Image::from($image), $response->rateLimit()));
     }
 
     /**
@@ -160,7 +160,7 @@ class Images extends ApiResource
     {
         $response = $this->transporter->send(ApiRequest::post('images/rename', ['ids' => $this->ids($images), 'name' => $name]));
 
-        return array_values(array_map(fn (array $image): Image => Image::from($image, $response->rateLimit()), $response->data()));
+        return $this->parse(fn (): array => array_values(array_map(fn (array $image): Image => Image::from($image, $response->rateLimit()), $response->data())));
     }
 
     /**
@@ -177,7 +177,7 @@ class Images extends ApiResource
     {
         $response = $this->transporter->send($request);
 
-        return Image::from($response->data(), $response->rateLimit());
+        return $this->parse(fn (): Image => Image::from($response->data(), $response->rateLimit()));
     }
 
     protected function file(ApiRequest $request): Download

@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Resources;
 
 use Closure;
+use Exception;
 use Mozex\Iminify\Contracts\TransporterContract;
+use Mozex\Iminify\Exceptions\IminifyException;
 use Mozex\Iminify\Exceptions\RateLimitedException;
+use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Exceptions\WaitTimeoutException;
+use TypeError;
 
 abstract class ApiResource
 {
@@ -65,6 +69,26 @@ abstract class ApiResource
 
             $this->pause($wait);
             $slept += $wait;
+        }
+    }
+
+    /**
+     * Builds a response from an answer, so an answer that doesn't read as the API's document
+     * says, such as a proxy's or a redirect's, ends in this package's exception.
+     *
+     * @template TResponse
+     *
+     * @param  Closure(): TResponse  $build
+     * @return TResponse
+     */
+    protected function parse(Closure $build): mixed
+    {
+        try {
+            return $build();
+        } catch (IminifyException $exception) {
+            throw $exception;
+        } catch (TypeError|Exception $exception) {
+            throw UnexpectedResponseException::unreadable($exception);
         }
     }
 

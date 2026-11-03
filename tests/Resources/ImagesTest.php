@@ -13,6 +13,7 @@ use Mozex\Iminify\Enums\Priority;
 use Mozex\Iminify\Exceptions\ConflictException;
 use Mozex\Iminify\Exceptions\DailyLimitReachedException;
 use Mozex\Iminify\Exceptions\RateLimitedException;
+use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Exceptions\WaitTimeoutException;
 use Mozex\Iminify\Http\Upload;
 use Mozex\Iminify\Iminify;
@@ -175,6 +176,30 @@ describe('the calls on one image', function () {
 
         expect((string) $http->requests[0]->getUri())->toBe(IMAGES_URL.'/..%2Faccount')
             ->and(fn () => clientAnswering($http)->images()->delete(''))->toThrow(InvalidArgumentException::class, 'must not be blank');
+    });
+
+    it('ends an answer it cannot read in its own exception', function (array $data) {
+        $http = new RecordingHttpClient([jsonResponse(['data' => $data])]);
+
+        expect(fn () => clientAnswering($http)->images()->get(IMAGE_ID))->toThrow(UnexpectedResponseException::class, 'could not read');
+    })->with([
+        'a list, as a followed redirect answers' => [[Fixtures::image()]],
+        'nothing' => [[]],
+        'no id' => [array_diff_key(Fixtures::image(), ['id' => true])],
+        'no status' => [array_diff_key(Fixtures::image(), ['status' => true])],
+        'no original' => [array_diff_key(Fixtures::image(), ['original' => true])],
+        'a file without its size' => [Fixtures::image(['optimized' => ['name' => 'a.webp', 'format' => 'webp']])],
+        'a number as text' => [Fixtures::image(['saved_bytes' => 'many'])],
+        'no date' => [array_diff_key(Fixtures::image(), ['created_at' => true])],
+        'a date that is none' => [Fixtures::image(['updated_at' => 'yesterday-ish'])],
+    ]);
+
+    it('ends a list it cannot read in its own exception too', function () {
+        $http = new RecordingHttpClient([jsonResponse(['data' => [['id' => 'a']]]), jsonResponse(['data' => ['not-an-image']])]);
+        $images = clientAnswering($http)->images();
+
+        expect(fn () => $images->list())->toThrow(UnexpectedResponseException::class, 'could not read')
+            ->and(fn () => $images->renameMany(['a'], 'b'))->toThrow(UnexpectedResponseException::class, 'could not read');
     });
 
     it('lets the API refusal reach the caller', function () {

@@ -30,9 +30,9 @@ class ImageSettings
     public static function from(array $attributes): self
     {
         return new self(
-            $attributes['level'],
+            $attributes['level'] ?? null,
             $attributes['format'] ?? null,
-            $attributes['keep_metadata'],
+            $attributes['keep_metadata'] ?? null,
             $attributes['width'] ?? null,
             $attributes['height'] ?? null,
             $attributes['scale'] ?? null,

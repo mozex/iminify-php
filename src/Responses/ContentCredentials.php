@@ -19,8 +19,8 @@ class ContentCredentials
     public static function from(array $attributes): self
     {
         return new self(
-            ContentCredentialsStatus::tryFrom($attributes['status']) ?? ContentCredentialsStatus::Unknown,
-            $attributes['generative_ai'],
+            ContentCredentialsStatus::tryFrom($attributes['status'] ?? null) ?? ContentCredentialsStatus::Unknown,
+            $attributes['generative_ai'] ?? null,
         );
     }
 }

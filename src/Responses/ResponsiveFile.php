@@ -20,11 +20,11 @@ class ResponsiveFile
     public static function from(array $attributes): self
     {
         return new self(
-            $attributes['width'],
-            $attributes['height'],
-            $attributes['size'],
-            $attributes['name'],
-            $attributes['download_url'],
+            $attributes['width'] ?? null,
+            $attributes['height'] ?? null,
+            $attributes['size'] ?? null,
+            $attributes['name'] ?? null,
+            $attributes['download_url'] ?? null,
         );
     }
 }

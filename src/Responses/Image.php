@@ -46,14 +46,14 @@ class Image
     public static function from(array $attributes, ?RateLimit $rateLimit = null): self
     {
         return new self(
-            $attributes['id'],
-            ImageStatus::tryFrom($attributes['status']) ?? ImageStatus::Unknown,
-            $attributes['name'],
-            ImageFile::from($attributes['original']),
+            $attributes['id'] ?? null,
+            ImageStatus::tryFrom($attributes['status'] ?? null) ?? ImageStatus::Unknown,
+            $attributes['name'] ?? null,
+            ImageFile::from($attributes['original'] ?? null),
             isset($attributes['optimized']) ? ImageFile::from($attributes['optimized']) : null,
             $attributes['saved_bytes'] ?? null,
             $attributes['saved_percent'] ?? null,
-            ImageSettings::from($attributes['settings']),
+            ImageSettings::from($attributes['settings'] ?? null),
             isset($attributes['size_limit_status']) ? (SizeLimitStatus::tryFrom($attributes['size_limit_status']) ?? SizeLimitStatus::Unknown) : null,
             isset($attributes['content_credentials']) ? ContentCredentials::from($attributes['content_credentials']) : null,
             isset($attributes['alt_text']) ? AltText::from($attributes['alt_text']) : null,
@@ -62,8 +62,8 @@ class Image
             $attributes['source_url'] ?? null,
             $attributes['folder'] ?? null,
             $attributes['share_url'] ?? null,
-            new DateTimeImmutable($attributes['created_at']),
-            new DateTimeImmutable($attributes['updated_at']),
+            new DateTimeImmutable($attributes['created_at'] ?? null),
+            new DateTimeImmutable($attributes['updated_at'] ?? null),
             $rateLimit ?? new RateLimit,
             $attributes,
         );

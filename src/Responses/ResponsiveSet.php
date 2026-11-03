@@ -25,7 +25,7 @@ class ResponsiveSet
     public static function from(array $attributes): self
     {
         return new self(
-            ResponsiveStatus::tryFrom($attributes['status']) ?? ResponsiveStatus::Unknown,
+            ResponsiveStatus::tryFrom($attributes['status'] ?? null) ?? ResponsiveStatus::Unknown,
             array_values(array_map(fn (array $file): ResponsiveFile => ResponsiveFile::from($file), $attributes['files'] ?? [])),
             $attributes['download_url'] ?? null,
             $attributes['html'] ?? null,

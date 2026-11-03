@@ -25,6 +25,7 @@ use Mozex\Iminify\Factory;
 use Mozex\Iminify\Http\ApiRequest;
 use Mozex\Iminify\Http\Upload;
 use Mozex\Iminify\Iminify;
+use Mozex\Iminify\Support\ClientIdentifier;
 use Mozex\Iminify\Tests\Fakes\FollowingHttpClient;
 use Mozex\Iminify\Tests\Fakes\RecordingHttpClient;
 use Psr\Http\Client\ClientInterface;
@@ -40,7 +41,7 @@ describe('every request', function () {
         expect((string) $request->getUri())->toBe('https://www.iminify.com/api/v1/images?status=failed&page=2')
             ->and($request->getHeaderLine('Authorization'))->toBe('Bearer test-key')
             ->and($request->getHeaderLine('Accept'))->toBe('application/json')
-            ->and($request->getHeaderLine('Iminify-Client'))->toMatch('/\Aphp\/\d+\.\d+\.\d+/');
+            ->and($request->getHeaderLine('Iminify-Client'))->toMatch('/\Aphp\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.]{1,8})?\z/');
     });
 
     it('keeps the key out of a dump of the client and the factory', function () {
@@ -54,15 +55,17 @@ describe('every request', function () {
     });
 
     it('sends JSON, and an empty body as an empty object', function () {
-        $http = new RecordingHttpClient([jsonResponse(['data' => []]), jsonResponse(['data' => []])]);
+        $http = new RecordingHttpClient([jsonResponse(['data' => []]), jsonResponse(['data' => []]), jsonResponse(['data' => []])]);
         $transporter = factoryAnswering($http)->make()->transporter();
 
-        $transporter->send(ApiRequest::patch('images/1', ['name' => 'a/b.webp', 'level' => null]));
+        $transporter->send(ApiRequest::post('images', ['url' => 'https://a.test/b.webp', 'level' => null]));
         $transporter->send(ApiRequest::post('images/1/retry'));
+        $transporter->send(ApiRequest::patch('monitors/1', ['pages' => null, 'name' => 'a']));
 
-        expect((string) $http->requests[0]->getBody())->toBe('{"name":"a/b.webp"}')
+        expect((string) $http->requests[0]->getBody())->toBe('{"url":"https://a.test/b.webp"}')
             ->and($http->requests[0]->getHeaderLine('Content-Type'))->toBe('application/json')
-            ->and((string) $http->requests[1]->getBody())->toBe('{}');
+            ->and((string) $http->requests[1]->getBody())->toBe('{}')
+            ->and((string) $http->requests[2]->getBody())->toBe('{"pages":null,"name":"a"}');
     });
 
     it('encodes an id so it stays one path segment, and refuses a blank or dotted one', function () {
@@ -374,6 +377,23 @@ describe('the factory', function () {
 
         expect((string) $http->requests[0]->getUri())->toBe('https://staging.example.com/api/v1/account')
             ->and(fn () => factoryAnswering($http)->withBaseUri('ftp://example.com'))->toThrow(InvalidArgumentException::class, 'http or https');
+    });
+
+    it('declares only a version the API keeps', function (?string $installed, string $declared) {
+        expect(ClientIdentifier::version($installed))->toBe($declared);
+    })->with([
+        ['1.2.3', '1.2.3'],
+        ['v1.2.3', '1.2.3'],
+        ['1.2.3-beta.1', '1.2.3-beta.1'],
+        ['1.2.3-toolongatag', '0.0.0'],
+        ['dev-main', '0.0.0'],
+        ['1.x-dev', '0.0.0'],
+        [null, '0.0.0'],
+    ]);
+
+    it('declares this package by default', function () {
+        expect(ClientIdentifier::for('php', 'mozex/no-such-package'))->toBe('php/0.0.0')
+            ->and(ClientIdentifier::for('php', 'mozex/iminify-php'))->toMatch('/\Aphp\/\d+\.\d+\.\d+(?:-[0-9A-Za-z.]{1,8})?\z/');
     });
 
     it('declares another client for a package built on this one, and sends extra headers', function () {

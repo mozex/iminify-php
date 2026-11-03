@@ -21,7 +21,7 @@ class AltText
     public static function from(array $attributes): self
     {
         return new self(
-            AltTextStatus::tryFrom($attributes['status']) ?? AltTextStatus::Unknown,
+            AltTextStatus::tryFrom($attributes['status'] ?? null) ?? AltTextStatus::Unknown,
             $attributes['text'] ?? null,
             $attributes['language'] ?? null,
             $attributes['suggested_name'] ?? null,

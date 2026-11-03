@@ -48,7 +48,7 @@ class ApiRequest
      */
     public static function patch(string $path, array $json): self
     {
-        return new self('PATCH', $path, json: self::clean($json));
+        return new self('PATCH', $path, json: self::clean($json, keepNulls: true));
     }
 
     public static function delete(string $path): self
@@ -78,17 +78,18 @@ class ApiRequest
     }
 
     /**
-     * A null means the same as leaving the parameter out, which is all a form can say.
+     * A null means the same as leaving the parameter out, which is all a form can say, so an
+     * upload's options read the same as a file or as an address. On a PATCH a null clears a value.
      *
      * @param  array<string, mixed>  $parameters
      * @return array<string, mixed>
      */
-    protected static function clean(array $parameters): array
+    protected static function clean(array $parameters, bool $keepNulls = false): array
     {
         $clean = [];
 
         foreach ($parameters as $name => $value) {
-            if ($value !== null) {
+            if ($value !== null || $keepNulls) {
                 $clean[$name] = $value instanceof BackedEnum ? $value->value : $value;
             }
         }

@@ -25,12 +25,12 @@ class ImageFile
     public static function from(array $attributes): self
     {
         return new self(
-            $attributes['name'],
-            $attributes['format'],
-            $attributes['size'],
-            $attributes['width'],
-            $attributes['height'],
-            $attributes['download_url'],
+            $attributes['name'] ?? null,
+            $attributes['format'] ?? null,
+            $attributes['size'] ?? null,
+            $attributes['width'] ?? null,
+            $attributes['height'] ?? null,
+            $attributes['download_url'] ?? null,
         );
     }
 }

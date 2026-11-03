@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Mozex\Iminify\Exceptions;
 
+use Throwable;
+
 /**
  * The answer isn't one the API gives: a redirect, or a body that doesn't read as expected.
  */
@@ -17,6 +19,11 @@ class UnexpectedResponseException extends IminifyException
     public static function notJson(int $status): self
     {
         return new self("Iminify answered HTTP {$status} with a body that isn't a JSON object.");
+    }
+
+    public static function unreadable(Throwable $previous): self
+    {
+        return new self('Iminify answered with a record this client could not read: a field it needs is missing or of another type.', 0, $previous);
     }
 
     public static function missingData(): self
