@@ -158,6 +158,16 @@ describe('waiting for a crawl', function () {
         expect(fn () => $fake->crawls()->wait(CRAWL_ID, timeout: 3))->toThrow(WaitTimeoutException::class, 'The crawl');
     });
 
+    it('ends on a crawl that failed, whatever is asked', function () {
+        $fake = new FakeClient([Fixtures::queuedCrawl(['status' => 'failed', 'pages_in_progress' => 0, 'images_in_progress' => 0])]);
+
+        $crawl = $fake->crawls()->wait(CRAWL_ID, until: fn (Crawl $crawl): bool => $crawl->audit !== null);
+
+        expect($crawl->status)->toBe(CrawlStatus::Failed);
+
+        $fake->assertSentTimes('GET', 'crawls/*', 1);
+    });
+
     it('waits on for what is asked', function () {
         $fake = new FakeClient([Fixtures::crawl(['audit' => null]), Fixtures::crawl()]);
 

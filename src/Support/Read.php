@@ -19,7 +19,7 @@ class Read
      */
     public static function date(string $value): DateTimeImmutable
     {
-        if (preg_match('/\A\d{4}-\d{2}-\d{2}T/', $value) !== 1) {
+        if (preg_match('/\A\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/', $value) !== 1) {
             throw new InvalidArgumentException("[{$value}] isn't a date as the API writes one.");
         }
 

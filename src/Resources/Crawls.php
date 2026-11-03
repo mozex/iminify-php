@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Resources;
 
 use Closure;
+use Mozex\Iminify\Enums\CrawlStatus;
 use Mozex\Iminify\Exceptions\WaitTimeoutException;
 use Mozex\Iminify\Http\ApiRequest;
 use Mozex\Iminify\Responses\Crawl;
@@ -72,7 +73,7 @@ class Crawls extends ApiResource
     {
         return $this->poll(
             fn (): Crawl => $this->get($crawl),
-            fn (Crawl $current): bool => $current->isFinished() && ($until === null || $until($current)),
+            fn (Crawl $current): bool => $current->isFinished() && ($until === null || $current->status !== CrawlStatus::Completed || $until($current)),
             $timeout,
             'The crawl',
             $crawl instanceof Crawl ? $crawl : null,

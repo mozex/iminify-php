@@ -145,6 +145,7 @@ describe('a finished scan', function () {
         'a skipped image without its reason' => [Fixtures::scan(['skipped' => [array_diff_key(Fixtures::scan()['skipped'][0], ['reason' => true])]])],
         'an empty date, which PHP alone reads as now' => [Fixtures::scan(['created_at' => ''])],
         'a relative date' => [Fixtures::scan(['updated_at' => 'tomorrow'])],
+        'a date with no time, which PHP alone reads as midnight here' => [Fixtures::scan(['created_at' => '2026-10-25T'])],
         'a format count that is no row' => [Fixtures::scan(['audit' => ['formats' => [1, 2]] + Fixtures::scan()['audit']])],
         'a format count without its number' => [Fixtures::scan(['audit' => ['formats' => [['format' => 'webp']]] + Fixtures::scan()['audit']])],
         'a format size without its bytes' => [Fixtures::scan(['audit' => ['images' => [['format_sizes' => [['format' => 'webp']]] + Fixtures::scan()['audit']['images'][0]]] + Fixtures::scan()['audit']])],
@@ -241,6 +242,16 @@ describe('waiting for a scan', function () {
         $fake = new FakeClient(array_fill(0, 200, Fixtures::scan(['images_in_progress' => 1])));
 
         expect(fn () => $fake->scans()->wait(SCAN_ID, timeout: 3))->toThrow(WaitTimeoutException::class, 'The scan');
+    });
+
+    it('ends on a scan that did not complete, whatever is asked', function () {
+        $fake = new FakeClient([Fixtures::queuedScan(['status' => 'failed', 'images_in_progress' => 0])]);
+
+        $scan = $fake->scans()->wait(SCAN_ID, until: fn (Scan $scan): bool => $scan->audit !== null);
+
+        expect($scan->status)->toBe(ScanStatus::Failed);
+
+        $fake->assertSentTimes('GET', 'scans/*', 1);
     });
 
     it('waits on for what is asked', function () {

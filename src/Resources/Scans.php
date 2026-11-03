@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Resources;
 
 use Closure;
+use Mozex\Iminify\Enums\ScanStatus;
 use Mozex\Iminify\Exceptions\WaitTimeoutException;
 use Mozex\Iminify\Http\ApiRequest;
 use Mozex\Iminify\Responses\Download;
@@ -45,7 +46,8 @@ class Scans extends ApiResource
 
     /**
      * Reads the scan until the scanner is through and none of its images is still compressing,
-     * and returns it. Pass `$until` to wait for more, such as `altTextsInProgress` reaching 0.
+     * and returns it. Pass `$until` to wait for more, such as `altTextsInProgress` reaching 0; a
+     * scan that didn't complete has no more to give, and ends the wait all the same.
      *
      * `$timeout` is checked between reads, so give the HTTP client a timeout of its own.
      *
@@ -58,7 +60,7 @@ class Scans extends ApiResource
     {
         return $this->poll(
             fn (): Scan => $this->get($scan),
-            fn (Scan $current): bool => $current->isFinished() && ($until === null || $until($current)),
+            fn (Scan $current): bool => $current->isFinished() && ($until === null || $current->status !== ScanStatus::Completed || $until($current)),
             $timeout,
             'The scan',
             $scan instanceof Scan ? $scan : null,

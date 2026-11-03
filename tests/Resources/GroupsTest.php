@@ -74,6 +74,22 @@ describe('opening a group', function () {
     });
 });
 
+describe('what a test reads of a group it opened', function () {
+    it('holds enums as their values at any depth', function () {
+        $fake = new FakeClient([Fixtures::openGroup()]);
+
+        $fake->groups()->create([
+            'outputs' => [['name' => 'thumbnail', 'width' => 150, 'height' => 150, 'crop' => [CropAnchor::Center, CropAnchor::End]]],
+            'formats' => [GroupFormat::Original, GroupFormat::Webp],
+            'priority' => Priority::Background,
+        ]);
+
+        $fake->assertSent('POST', 'groups', fn (ApiRequest $request): bool => $request->json['formats'] === ['original', 'webp']
+            && $request->json['outputs'][0]['crop'] === ['center', 'end']
+            && $request->json['priority'] === 'background');
+    });
+});
+
 describe('sending its source', function () {
     it('sends the file as a multipart form to the group given by id or record', function () {
         $fake = new FakeClient([Fixtures::groupInProgress(), Fixtures::groupInProgress()]);

@@ -80,6 +80,7 @@ class ApiRequest
     /**
      * A null means the same as leaving the parameter out, which is all a form can say, so an
      * upload's options read the same as a file or as an address. On a PATCH a null clears a value.
+     * An enum reads as its value at any depth, so what a test asserts is what goes out.
      *
      * @param  array<string, mixed>  $parameters
      * @return array<string, mixed>
@@ -90,10 +91,19 @@ class ApiRequest
 
         foreach ($parameters as $name => $value) {
             if ($value !== null || $keepNulls) {
-                $clean[$name] = $value instanceof BackedEnum ? $value->value : $value;
+                $clean[$name] = self::plain($value);
             }
         }
 
         return $clean;
+    }
+
+    protected static function plain(mixed $value): mixed
+    {
+        return match (true) {
+            $value instanceof BackedEnum => $value->value,
+            is_array($value) => array_map(self::plain(...), $value),
+            default => $value,
+        };
     }
 }

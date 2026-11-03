@@ -77,7 +77,7 @@ class ApiResponse
     }
 
     /**
-     * The `data` key every answer but a download and a list wraps its record in.
+     * The `data` key every answer but a download and a page of a list wraps its record in.
      *
      * @return array<array-key, mixed>
      */
