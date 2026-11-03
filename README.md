@@ -8,13 +8,27 @@
 [![License](https://img.shields.io/github/license/mozex/iminify-php.svg?style=flat-square)](https://packagist.org/packages/mozex/iminify-php)
 [![Total Downloads](https://img.shields.io/packagist/dt/mozex/iminify-php.svg?style=flat-square)](https://packagist.org/packages/mozex/iminify-php)
 
-TODO(scaffold): one paragraph on what the package does and why it's useful. Concrete, no superlatives.
+The PHP client for the [Iminify](https://www.iminify.com) image optimization API. Send an image, wait for it and save the smaller file in a few lines, and reach the rest of the API too: upload groups, page scans, site crawls, weekly checks, your account and webhook signatures. It also has an optimizer for Spatie's image packages, so a chain, `spatie/image` or Browsershot can compress through Iminify with no binaries on the server.
 
 > **[Read the full documentation at mozex.dev](https://mozex.dev/docs/iminify-php/v1)**: searchable docs, version requirements, detailed changelog, and more.
 
 ## Table of Contents
 
-TODO(scaffold): single-page, anchor links to this README's headings; multi-page, links to the pages on mozex.dev. Documentation sections only.
+- [Introduction](https://mozex.dev/docs/iminify-php/v1)
+- Usage
+  - [Images](https://mozex.dev/docs/iminify-php/v1/usage/images)
+  - [Upload Groups](https://mozex.dev/docs/iminify-php/v1/usage/upload-groups)
+  - [Page Scans](https://mozex.dev/docs/iminify-php/v1/usage/page-scans)
+  - [Site Crawls](https://mozex.dev/docs/iminify-php/v1/usage/site-crawls)
+  - [Weekly Checks](https://mozex.dev/docs/iminify-php/v1/usage/weekly-checks)
+  - [Account](https://mozex.dev/docs/iminify-php/v1/usage/account)
+  - [Webhooks](https://mozex.dev/docs/iminify-php/v1/usage/webhooks)
+- Integrations
+  - [Spatie's Image Packages](https://mozex.dev/docs/iminify-php/v1/integrations/spatie)
+- Reference
+  - [Configuration](https://mozex.dev/docs/iminify-php/v1/reference/configuration)
+  - [Error Handling](https://mozex.dev/docs/iminify-php/v1/reference/error-handling)
+  - [Testing](https://mozex.dev/docs/iminify-php/v1/reference/testing)
 
 ## Support This Project
 
@@ -24,6 +38,18 @@ If my packages save you time or help your business, consider [**sponsoring my wo
 
 Business sponsors get logo placement in package READMEs. [**See sponsorship tiers →**](https://github.com/sponsors/mozex)
 
+## What You Get
+
+**Waiting is built in.** The API works in the background, so every long-running record has a `wait()` that backs off between reads, honours `Retry-After` when you're rate limited, and stops at the timeout you give it.
+
+**A typed exception per refusal.** A spent daily allowance throws `DailyLimitReachedException`, a short rate limit `RateLimitedException` with its `$retryAfter`, a bad field `ValidationException` with its `$errors`. [See all of them](https://mozex.dev/docs/iminify-php/v1/reference/error-handling).
+
+**Spatie's image packages, without binaries.** `IminifyOptimizer` takes jpegoptim's place in a chain, and `spatie/image` and Browsershot take a chain. A failure leaves the file exactly as it was. [See how it works](https://mozex.dev/docs/iminify-php/v1/integrations/spatie).
+
+**A fake for your own tests.** `FakeClient` answers from a queue through the real resources, so your code reads the same objects and catches the same exceptions as it does for real. [See it in use](https://mozex.dev/docs/iminify-php/v1/reference/testing).
+
+**Any HTTP client.** It's built on PSR-18, so it uses Guzzle, Symfony's client or whatever your project already has.
+
 ## Installation
 
 > **Requires [PHP 8.2+](https://php.net/releases/)** - see [all version requirements](https://mozex.dev/docs/iminify-php/v1/requirements)
@@ -32,7 +58,112 @@ Business sponsors get logo placement in package READMEs. [**See sponsorship tier
 composer require mozex/iminify-php
 ```
 
-TODO(scaffold): the content sections (single-page), or What You Get and Quick Start (multi-page).
+The client needs a PSR-18 HTTP client and PSR-17 factories, and finds what your project has. A project with neither needs one, such as `composer require guzzlehttp/guzzle`. You also need an API key from Settings, API Tokens on [www.iminify.com](https://www.iminify.com).
+
+## Quick Start
+
+Send an image, wait for it and save the result:
+
+```php
+use Mozex\Iminify\Iminify;
+
+$client = Iminify::factory()
+    ->withApiKey(getenv('IMINIFY_API_KEY'))
+    ->withTimeout(60)
+    ->make();
+
+$image = $client->images()->upload('photos/team.jpg', ['format' => 'webp']);
+$image = $client->images()->wait($image);
+
+if ($image->hasResult()) {
+    $client->images()->download($image)->saveTo('photos/team.webp');
+}
+
+echo "{$image->status->value}, saved {$image->savedPercent}%";
+```
+
+Give the client a timeout: PSR-18 has none of its own, and `wait()` only checks its clock between reads, so a stalled read otherwise blocks for good.
+
+### Handling a refusal
+
+```php
+use Mozex\Iminify\Exceptions\DailyLimitReachedException;
+use Mozex\Iminify\Exceptions\RateLimitedException;
+
+try {
+    $image = $client->images()->upload('photos/team.jpg');
+} catch (RateLimitedException $exception) {
+    sleep($exception->retryAfter ?? 5);
+    $image = $client->images()->upload('photos/team.jpg');
+} catch (DailyLimitReachedException) {
+    // Out for today
+}
+```
+
+### Upload groups
+
+One image and every size and format you keep of it, counted as one image:
+
+```php
+use Mozex\Iminify\Enums\GroupFormat;
+use Mozex\Iminify\Http\Upload;
+
+$upload = Upload::fromPath('photos/team.jpg');
+
+$group = $client->groups()->create([
+    'source' => ['format' => 'jpg', 'size' => $upload->size(), 'width' => 2560, 'height' => 1707],
+    'outputs' => [
+        ['name' => 'full', 'width' => 2560, 'height' => 1707],
+        ['name' => 'medium', 'width' => 300, 'height' => 200],
+    ],
+    'formats' => [GroupFormat::Original, GroupFormat::Webp],
+]);
+
+$group = $client->groups()->sendSource($group, $upload);
+$group = $client->groups()->wait($group);
+
+$client->groups()->download($group)->saveTo('photos/team.zip');
+```
+
+The `width` and `height` are yours to work out, because the API wants them as displayed and `getimagesize()` gives them as stored.
+
+### Spatie's image optimizer
+
+```php
+use Mozex\Iminify\Spatie\IminifyOptimizer;
+use Spatie\ImageOptimizer\OptimizerChain;
+
+$chain = (new OptimizerChain)->addOptimizer(new IminifyOptimizer([
+    'api_key' => getenv('IMINIFY_API_KEY'),
+]));
+
+$chain->optimize('photos/team.jpg');
+```
+
+Build the chain this way rather than through `OptimizerChainFactory::create()`, which silently ignores a list holding only this optimizer.
+
+### Your own tests
+
+```php
+use Mozex\Iminify\Testing\FakeClient;
+use Mozex\Iminify\Testing\Fixtures;
+
+$client = new FakeClient([Fixtures::image()]);
+
+$image = $client->images()->get('abc');
+
+$client->assertSent('GET', 'images/abc');
+```
+
+### Webhooks
+
+```php
+use Mozex\Iminify\Webhooks\WebhookVerifier;
+
+$event = (new WebhookVerifier($secret))->verify($rawBody, $signatureHeader);
+```
+
+That's the common path. Scans, crawls, weekly checks and every option are in the [documentation](https://mozex.dev/docs/iminify-php/v1).
 
 ## Resources
 
