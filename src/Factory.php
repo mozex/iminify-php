@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mozex\Iminify;
 
 use Closure;
+use GuzzleHttp\Client as GuzzleClient;
 use Http\Discovery\Psr17FactoryDiscovery;
 use Http\Discovery\Psr18ClientDiscovery;
 use InvalidArgumentException;
@@ -33,6 +34,8 @@ class Factory
     protected array $headers = [];
 
     protected ?Closure $sleep = null;
+
+    protected ?int $timeout = null;
 
     /**
      * A character a header can't carry is refused here, in words that don't quote the key,
@@ -74,6 +77,23 @@ class Factory
     public function withHttpClient(ClientInterface $client): static
     {
         $this->httpClient = $client;
+
+        return $this;
+    }
+
+    /**
+     * The seconds one request may take, on a client this factory finds. PSR-18 has no timeout of
+     * its own and a client found has none set, so without this a stalled read blocks for good.
+     * Symfony's client and Guzzle take it. Any other client found is refused rather than left
+     * without one: pass it through `withHttpClient()`, which keeps whatever you set on it.
+     */
+    public function withTimeout(int $seconds): static
+    {
+        if ($seconds < 1) {
+            throw new InvalidArgumentException("A timeout is at least one second, [{$seconds}] given.");
+        }
+
+        $this->timeout = $seconds;
 
         return $this;
     }
@@ -153,12 +173,18 @@ class Factory
     /**
      * Discovery prefers Symfony's client where it's installed, and that one follows redirects
      * unless told not to: a POST to the bare domain would arrive as a GET and read as a success.
+     * A Guzzle client can't be changed once made, and never follows one through PSR-18.
      */
     protected function discoverHttpClient(): ClientInterface
     {
         $client = $this->findHttpClient();
 
-        return method_exists($client, 'withOptions') ? $client->withOptions(['max_redirects' => 0]) : $client;
+        return match (true) {
+            method_exists($client, 'withOptions') => $client->withOptions(['max_redirects' => 0] + ($this->timeout === null ? [] : ['timeout' => $this->timeout, 'max_duration' => $this->timeout])),
+            $this->timeout === null => $client,
+            $client instanceof GuzzleClient => new GuzzleClient(['timeout' => $this->timeout]),
+            default => throw new InvalidArgumentException('A timeout can\'t be set on the HTTP client found, '.$client::class.'. Pass one set up with yours through withHttpClient().'),
+        };
     }
 
     protected function findHttpClient(): ClientInterface

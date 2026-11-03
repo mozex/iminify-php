@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\HttpFactory;
 use GuzzleHttp\Psr7\Request;
@@ -334,6 +335,57 @@ describe('the factory', function () {
         (new Factory)->withApiKey('a-key')->withHttpClient($given)->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory)->make();
 
         expect($given->options)->toBe([]);
+    });
+
+    describe('a timeout', function () {
+        $finding = fn (ClientInterface $client): Factory => (new class($client) extends Factory
+        {
+            public function __construct(protected ClientInterface $found) {}
+
+            protected function findHttpClient(): ClientInterface
+            {
+                return $this->found;
+            }
+        })->withApiKey('a-key')->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory);
+
+        $httpClientOf = fn (Client $client): ClientInterface => (fn (): ClientInterface => $this->client)->call($client->transporter());
+
+        it('reaches a client found that takes options, beside redirects off', function () use ($finding) {
+            $found = new FollowingHttpClient;
+
+            $finding($found)->withTimeout(30)->make();
+
+            expect($found->options)->toBe(['max_redirects' => 0, 'timeout' => 30, 'max_duration' => 30]);
+        });
+
+        it('makes Guzzle again with it, since one found cannot be changed', function () use ($finding, $httpClientOf) {
+            $client = $httpClientOf($finding(new GuzzleClient)->withTimeout(30)->make());
+
+            expect($client)->toBeInstanceOf(GuzzleClient::class)
+                ->and((fn (): array => $this->config)->call($client)['timeout'])->toBe(30);
+        });
+
+        it('refuses a client found that cannot take one, naming the way out', function () use ($finding) {
+            $finding(new RecordingHttpClient)->withTimeout(30)->make();
+        })->throws(InvalidArgumentException::class, 'withHttpClient()');
+
+        it('leaves any client found as it stands without one', function () use ($finding, $httpClientOf) {
+            $found = new RecordingHttpClient;
+
+            expect($httpClientOf($finding($found)->make()))->toBe($found);
+        });
+
+        it('leaves a client it was given with the timeout it was given', function () {
+            $given = new FollowingHttpClient;
+
+            (new Factory)->withApiKey('a-key')->withHttpClient($given)->withTimeout(30)->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory)->make();
+
+            expect($given->options)->toBe([]);
+        });
+
+        it('is at least a second', function () {
+            (new Factory)->withTimeout(0);
+        })->throws(InvalidArgumentException::class, 'at least one second');
     });
 
     it('refuses a key holding what a header cannot carry, without quoting it', function (string $key) {
