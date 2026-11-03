@@ -36,3 +36,33 @@ function jsonResponse(array $body, int $status = 200, array $headers = []): Resp
 {
     return new Response($status, ['Content-Type' => 'application/json'] + $headers, (string) json_encode($body));
 }
+
+/**
+ * The API's published document, kept as a copy so the tests hold the client to it.
+ *
+ * @return array<string, mixed>
+ */
+function apiDocument(): array
+{
+    static $document = null;
+
+    return $document ??= json_decode((string) file_get_contents(__DIR__.'/Fixtures/openapi.json'), true, 512, JSON_THROW_ON_ERROR);
+}
+
+/**
+ * The example the document gives for one operation's answer.
+ *
+ * @return array<array-key, mixed>
+ */
+function apiExample(string $operationId, int $status): array
+{
+    foreach (apiDocument()['paths'] as $operations) {
+        foreach ($operations as $operation) {
+            if (($operation['operationId'] ?? null) === $operationId) {
+                return $operation['responses'][$status]['content']['application/json']['example'];
+            }
+        }
+    }
+
+    throw new RuntimeException("The document has no operation {$operationId}.");
+}

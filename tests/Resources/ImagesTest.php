@@ -18,8 +18,8 @@ use Mozex\Iminify\Exceptions\WaitTimeoutException;
 use Mozex\Iminify\Http\Upload;
 use Mozex\Iminify\Iminify;
 use Mozex\Iminify\Responses\Image;
+use Mozex\Iminify\Testing\Fixtures;
 use Mozex\Iminify\Tests\Fakes\RecordingHttpClient;
-use Mozex\Iminify\Tests\Fixtures;
 use Psr\Http\Message\RequestInterface;
 
 const IMAGE_ID = '9d3c5b8e-6f0a-4c1e-9b7d-2a4e8f1c6b35';
@@ -58,7 +58,7 @@ describe('sending an image', function () {
     it('uploads a path with its options and answers the queued image', function () {
         $path = tempnam(sys_get_temp_dir(), 'iminify').'.jpg';
         file_put_contents($path, 'the-bytes');
-        $http = new RecordingHttpClient([jsonResponse(['data' => Fixtures::queuedImage()], 202, ['X-RateLimit-Remaining' => '299'])]);
+        $http = new RecordingHttpClient([jsonResponse(['data' => Fixtures::queuedImage(['id' => IMAGE_ID])], 202, ['X-RateLimit-Remaining' => '299'])]);
 
         try {
             $image = clientAnswering($http)->images()->upload($path, [
@@ -419,8 +419,8 @@ it('uploads an image, waits for it and saves the result', function () {
     file_put_contents($source, 'the-upload');
     file_put_contents($target, 'old');
     $http = new RecordingHttpClient([
-        jsonResponse(['data' => Fixtures::queuedImage()], 202),
-        jsonResponse(['data' => Fixtures::queuedImage(['status' => 'optimizing'])]),
+        jsonResponse(['data' => Fixtures::queuedImage(['id' => IMAGE_ID])], 202),
+        jsonResponse(['data' => Fixtures::queuedImage(['id' => IMAGE_ID, 'status' => 'optimizing'])]),
         jsonResponse(['data' => Fixtures::image()]),
         new Response(200, ['Content-Type' => 'image/webp', 'Content-Length' => '11'], 'the-smaller'),
     ]);

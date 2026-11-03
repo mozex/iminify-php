@@ -10,37 +10,37 @@ use Mozex\Iminify\Enums\SizeLimitStatus;
 use Mozex\Iminify\Responses\Image;
 use Mozex\Iminify\Responses\Page;
 use Mozex\Iminify\Responses\RateLimit;
-use Mozex\Iminify\Tests\Fixtures;
+use Mozex\Iminify\Testing\Fixtures;
 
 describe('an image', function () {
     it('reads every field of a finished one', function () {
         $rateLimit = new RateLimit(300, 299);
-        $image = Image::from(Fixtures::image(), $rateLimit);
+        $image = Image::from(Fixtures::image(['folder' => 'holiday/beach', 'share_url' => 'https://www.iminify.com/shared/abc', 'source_url' => 'https://example.com/team-offsite.jpg']), $rateLimit);
 
         expect($image->id)->toBe('9d3c5b8e-6f0a-4c1e-9b7d-2a4e8f1c6b35')
             ->and($image->status)->toBe(ImageStatus::Completed)
             ->and($image->name)->toBe('team-offsite.webp')
             ->and($image->original->format)->toBe('jpg')
-            ->and($image->original->size)->toBe(482133)
+            ->and($image->original->size)->toBe(2841205)
             ->and($image->optimized->format)->toBe('webp')
             ->and($image->optimized->width)->toBe(1600)
-            ->and($image->optimized->height)->toBe(1067)
+            ->and($image->optimized->height)->toBe(1200)
             ->and($image->optimized->downloadUrl)->toEndWith('/download')
-            ->and($image->savedBytes)->toBe(383922)
-            ->and($image->savedPercent)->toBe(79.6)
+            ->and($image->savedBytes)->toBe(2628328)
+            ->and($image->savedPercent)->toBe(92.51)
             ->and($image->settings->level)->toBe('smart')
             ->and($image->settings->format)->toBe('webp')
             ->and($image->settings->keepMetadata)->toBeFalse()
             ->and($image->settings->width)->toBe(1600)
-            ->and($image->settings->sizeLimit)->toBe(150)
-            ->and($image->settings->responsiveWidths)->toBe([480, 960])
+            ->and($image->settings->sizeLimit)->toBe(250)
+            ->and($image->settings->responsiveWidths)->toBe([480, 768, 1200, 1600])
             ->and($image->sizeLimitStatus)->toBe(SizeLimitStatus::Under)
             ->and($image->contentCredentials->status)->toBe(ContentCredentialsStatus::Removed)
-            ->and($image->contentCredentials->generativeAi)->toBeTrue()
+            ->and($image->contentCredentials->generativeAi)->toBeFalse()
             ->and($image->altText->status)->toBe(AltTextStatus::Written)
-            ->and($image->altText->text)->toBe('Six colleagues around a picnic table')
+            ->and($image->altText->text)->toBe('Six colleagues laughing around a picnic table on a lakeside lawn')
             ->and($image->altText->language)->toBe('en')
-            ->and($image->altText->suggestedName)->toBe('colleagues-picnic-table')
+            ->and($image->altText->suggestedName)->toBe('colleagues-picnic-table-lakeside')
             ->and($image->responsive->status)->toBe(ResponsiveStatus::Ready)
             ->and($image->responsive->files[0]->width)->toBe(480)
             ->and($image->responsive->files[0]->name)->toBe('team-offsite-480w.webp')
@@ -49,15 +49,15 @@ describe('an image', function () {
             ->and($image->sourceUrl)->toBe('https://example.com/team-offsite.jpg')
             ->and($image->folder)->toBe('holiday/beach')
             ->and($image->shareUrl)->toEndWith('/shared/abc')
-            ->and($image->createdAt->format(DATE_ATOM))->toBe('2026-11-03T10:15:30+00:00')
-            ->and($image->updatedAt->format(DATE_ATOM))->toBe('2026-11-03T10:15:42+00:00')
+            ->and($image->createdAt->format(DATE_ATOM))->toBe(Fixtures::image()['created_at'])
+            ->and($image->updatedAt->format(DATE_ATOM))->toBe(Fixtures::image()['updated_at'])
             ->and($image->rateLimit)->toBe($rateLimit)
             ->and($image->isFinished())->toBeTrue()
             ->and($image->hasResult())->toBeTrue();
     });
 
     it('reads a queued one, whose optional parts are null', function () {
-        $image = Image::from(Fixtures::queuedImage());
+        $image = Image::from(Fixtures::queuedImage(['settings' => ['level' => 'smart', 'format' => null, 'keep_metadata' => false], 'alt_text' => null, 'responsive' => null]));
 
         expect($image->status)->toBe(ImageStatus::Queued)
             ->and($image->optimized)->toBeNull()
