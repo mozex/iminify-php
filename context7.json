@@ -1,0 +1,8 @@
+{
+    "$schema": "https://context7.com/schema/context7.json",
+    "url": "https://context7.com/mozex/iminify-php",
+    "public_key": "pk_2dXAZIEpHP6qQeGGTuyQt",
+    "projectTitle": "Iminify PHP",
+    "description": "PHP client for the Iminify image optimization API, with an optimizer for Spatie's image packages",
+    "folders": []
+}
