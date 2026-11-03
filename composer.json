@@ -2,7 +2,14 @@
     "name": "mozex/iminify-php",
     "description": "PHP client for the Iminify image optimization API, with an optimizer for Spatie's image packages",
     "keywords": [
-        "php",
+        "iminify",
+        "image-optimization",
+        "image-compression",
+        "webp",
+        "avif",
+        "api-client",
+        "spatie",
+        "image-optimizer",
         "mozex"
     ],
     "homepage": "https://github.com/mozex/iminify-php",
@@ -16,9 +23,17 @@
         }
     ],
     "require": {
-        "php": "^8.2.0"
+        "php": "^8.2.0",
+        "composer-runtime-api": "^2.0",
+        "php-http/discovery": "^1.20",
+        "psr/http-client": "^1.0.3",
+        "psr/http-client-implementation": "^1.0.1",
+        "psr/http-factory": "^1.1",
+        "psr/http-factory-implementation": "^1.0",
+        "psr/http-message": "^1.1|^2.0"
     },
     "require-dev": {
+        "guzzlehttp/guzzle": "^7.9.3|^8.0",
         "laravel/pint": "^1.14",
         "pestphp/pest": "^3.8.2|^4.0.0|^5.0.0",
         "pestphp/pest-plugin-type-coverage": "^3.5|^4.0.0|^5.0.1",
@@ -55,6 +70,7 @@
         "preferred-install": "dist",
         "allow-plugins": {
             "pestphp/pest-plugin": true,
+            "php-http/discovery": false,
             "phpstan/extension-installer": true
         }
     },
