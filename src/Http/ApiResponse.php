@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Http;
 
 use JsonException;
+use Mozex\Iminify\Exceptions\ApiException;
 use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Responses\RateLimit;
 use Psr\Http\Message\ResponseInterface;
@@ -30,6 +31,25 @@ class ApiResponse
         }
 
         return new self($response->getStatusCode(), $headers, $response->getBody());
+    }
+
+    /**
+     * Hands the answer back when it's a success, and otherwise ends in the exception it calls for.
+     *
+     * @throws ApiException when the API refused the request
+     * @throws UnexpectedResponseException when the answer is a redirect
+     */
+    public function successful(): self
+    {
+        if ($this->status >= 300 && $this->status < 400) {
+            throw UnexpectedResponseException::redirect($this->status, $this->header('location'));
+        }
+
+        if ($this->status >= 400) {
+            throw ApiException::fromResponse($this);
+        }
+
+        return $this;
     }
 
     public function header(string $name): ?string

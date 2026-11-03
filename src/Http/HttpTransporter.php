@@ -7,9 +7,7 @@ namespace Mozex\Iminify\Http;
 use InvalidArgumentException;
 use JsonException;
 use Mozex\Iminify\Contracts\TransporterContract;
-use Mozex\Iminify\Exceptions\ApiException;
 use Mozex\Iminify\Exceptions\TransportException;
-use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Psr\Http\Client\ClientExceptionInterface;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -38,15 +36,7 @@ class HttpTransporter implements TransporterContract
             throw new TransportException("Couldn't reach Iminify: {$exception->getMessage()}", 0, $exception);
         }
 
-        if ($response->status >= 300 && $response->status < 400) {
-            throw UnexpectedResponseException::redirect($response->status, $response->header('location'));
-        }
-
-        if ($response->status >= 400) {
-            throw ApiException::fromResponse($response);
-        }
-
-        return $response;
+        return $response->successful();
     }
 
     /**

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Resources;
 
 use Closure;
-use InvalidArgumentException;
 use Mozex\Iminify\Enums\DownloadType;
 use Mozex\Iminify\Exceptions\WaitTimeoutException;
 use Mozex\Iminify\Http\ApiRequest;
@@ -31,9 +30,7 @@ class Images extends ApiResource
      */
     public function list(array $query = []): Page
     {
-        $response = $this->transporter->send(ApiRequest::get('images', $query));
-
-        return $this->parse(fn (): Page => Page::from($response->json(), Image::from(...), $response->rateLimit()));
+        return $this->page(ApiRequest::get('images', $query), Image::from(...));
     }
 
     /**
@@ -158,9 +155,7 @@ class Images extends ApiResource
      */
     public function renameMany(array $images, string $name): array
     {
-        $response = $this->transporter->send(ApiRequest::post('images/rename', ['ids' => $this->ids($images), 'name' => $name]));
-
-        return $this->parse(fn (): array => array_values(array_map(fn (array $image): Image => Image::from($image, $response->rateLimit()), $response->data())));
+        return $this->records(ApiRequest::post('images/rename', ['ids' => $this->ids($images), 'name' => $name]), Image::from(...));
     }
 
     /**
@@ -175,14 +170,7 @@ class Images extends ApiResource
 
     protected function image(ApiRequest $request): Image
     {
-        $response = $this->transporter->send($request);
-
-        return $this->parse(fn (): Image => Image::from($response->data(), $response->rateLimit()));
-    }
-
-    protected function file(ApiRequest $request): Download
-    {
-        return Download::fromResponse($this->transporter->send($request));
+        return $this->record($request, Image::from(...));
     }
 
     protected function path(string|Image $image): string
@@ -202,15 +190,5 @@ class Images extends ApiResource
     protected function ids(array $images): array
     {
         return array_values(array_map($this->id(...), $images));
-    }
-
-    protected function toUpload(mixed $file, ?string $name): Upload
-    {
-        return match (true) {
-            $file instanceof Upload => $file,
-            is_string($file) => Upload::fromPath($file, $name),
-            is_resource($file), $file instanceof StreamInterface => Upload::fromStream($file, $name ?? throw new InvalidArgumentException('A stream upload needs a name, whose extension the API reads.')),
-            default => throw new InvalidArgumentException('An upload takes a path, an open stream, a PSR-7 stream or an Upload.'),
-        };
     }
 }

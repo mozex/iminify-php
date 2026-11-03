@@ -6,11 +6,18 @@ namespace Mozex\Iminify\Resources;
 
 use Closure;
 use Exception;
+use InvalidArgumentException;
 use Mozex\Iminify\Contracts\TransporterContract;
 use Mozex\Iminify\Exceptions\IminifyException;
 use Mozex\Iminify\Exceptions\RateLimitedException;
 use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Exceptions\WaitTimeoutException;
+use Mozex\Iminify\Http\ApiRequest;
+use Mozex\Iminify\Http\Upload;
+use Mozex\Iminify\Responses\Download;
+use Mozex\Iminify\Responses\Page;
+use Mozex\Iminify\Responses\RateLimit;
+use Psr\Http\Message\StreamInterface;
 use TypeError;
 
 abstract class ApiResource
@@ -90,6 +97,66 @@ abstract class ApiResource
         } catch (TypeError|Exception $exception) {
             throw UnexpectedResponseException::unreadable($exception);
         }
+    }
+
+    /**
+     * Sends the request and reads the record its answer wraps in `data`.
+     *
+     * @template TRecord
+     *
+     * @param  Closure(array<array-key, mixed>, RateLimit): TRecord  $from
+     * @return TRecord
+     */
+    protected function record(ApiRequest $request, Closure $from): mixed
+    {
+        $response = $this->transporter->send($request);
+
+        return $this->parse(fn (): mixed => $from($response->data(), $response->rateLimit()));
+    }
+
+    /**
+     * Sends the request and reads one page of a list.
+     *
+     * @template TItem
+     *
+     * @param  Closure(array<array-key, mixed>): TItem  $item
+     * @return Page<TItem>
+     */
+    protected function page(ApiRequest $request, Closure $item): Page
+    {
+        $response = $this->transporter->send($request);
+
+        return $this->parse(fn (): Page => Page::from($response->json(), $item, $response->rateLimit()));
+    }
+
+    /**
+     * Sends the request and reads the list its answer wraps in `data`, each record with the answer's limits.
+     *
+     * @template TRecord
+     *
+     * @param  Closure(array<array-key, mixed>, RateLimit): TRecord  $from
+     * @return list<TRecord>
+     */
+    protected function records(ApiRequest $request, Closure $from): array
+    {
+        $response = $this->transporter->send($request);
+
+        return $this->parse(fn (): array => array_values(array_map(fn (array $record): mixed => $from($record, $response->rateLimit()), $response->data())));
+    }
+
+    protected function file(ApiRequest $request): Download
+    {
+        return Download::fromResponse($this->transporter->send($request));
+    }
+
+    protected function toUpload(mixed $file, ?string $name): Upload
+    {
+        return match (true) {
+            $file instanceof Upload => $file,
+            is_string($file) => Upload::fromPath($file, $name),
+            is_resource($file), $file instanceof StreamInterface => Upload::fromStream($file, $name ?? throw new InvalidArgumentException('A stream upload needs a name, whose extension the API reads.')),
+            default => throw new InvalidArgumentException('An upload takes a path, an open stream, a PSR-7 stream or an Upload.'),
+        };
     }
 
     protected function pause(float $seconds): void

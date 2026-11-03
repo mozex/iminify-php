@@ -50,6 +50,35 @@ class Upload
     }
 
     /**
+     * The bytes left to send, which an upload group declares before its file is sent. It's
+     * null for what can't say, such as a stream that can't seek or one closed since.
+     */
+    public function size(): ?int
+    {
+        if ($this->source instanceof StreamInterface) {
+            $size = $this->source->isSeekable() ? $this->source->getSize() : null;
+
+            return $size === null ? null : max(0, $size - $this->source->tell());
+        }
+
+        if (is_resource($this->source)) {
+            return $this->remainingInResource($this->source);
+        }
+
+        if (! is_string($this->source)) {
+            return null;
+        }
+
+        if (! $this->isPath) {
+            return strlen($this->source);
+        }
+
+        $size = @filesize($this->source);
+
+        return $size === false ? null : $size;
+    }
+
+    /**
      * Copies the file into an open stream without holding it all in memory.
      *
      * @param  resource  $target
@@ -116,6 +145,23 @@ class Upload
         if (@stream_copy_to_stream($source, $target) === false) {
             throw new TransportException("Couldn't write the upload to a temporary stream: the disk may be full.");
         }
+    }
+
+    /**
+     * @param  resource  $stream
+     */
+    protected function remainingInResource(mixed $stream): ?int
+    {
+        $position = @ftell($stream);
+
+        if ($position === false || ! stream_get_meta_data($stream)['seekable'] || @fseek($stream, 0, SEEK_END) !== 0) {
+            return null;
+        }
+
+        $end = ftell($stream);
+        fseek($stream, $position);
+
+        return $end === false ? null : max(0, $end - $position);
     }
 
     protected static function name(string $name): string
