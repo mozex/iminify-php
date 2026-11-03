@@ -123,7 +123,7 @@ describe('a page', function () {
             'links' => ['next' => 'https://www.iminify.com/api/v1/images?page=3'],
             'meta' => ['current_page' => 2, 'last_page' => 3, 'per_page' => 2, 'total' => 5],
         ];
-        $page = Page::from($body, fn (array $image): Image => Image::from($image), new RateLimit(60, 59));
+        $page = Page::from($body, Image::from(...), new RateLimit(60, 59));
 
         expect($page)->toHaveCount(2)
             ->and(array_map(fn (Image $image): string => $image->id, iterator_to_array($page)))->toBe(['a', 'b'])
@@ -138,8 +138,8 @@ describe('a page', function () {
     });
 
     it('has no next page on the last one, or on an empty list', function () {
-        $last = Page::from(['data' => [], 'meta' => ['current_page' => 3, 'last_page' => 3]], fn (array $image): Image => Image::from($image));
-        $empty = Page::from(['data' => []], fn (array $image): Image => Image::from($image));
+        $last = Page::from(['data' => [], 'meta' => ['current_page' => 3, 'last_page' => 3]], Image::from(...));
+        $empty = Page::from(['data' => []], Image::from(...));
 
         expect($last->nextPage)->toBeNull()
             ->and($empty->nextPage)->toBeNull()

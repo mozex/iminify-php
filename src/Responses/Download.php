@@ -6,9 +6,11 @@ namespace Mozex\Iminify\Responses;
 
 use InvalidArgumentException;
 use Mozex\Iminify\Exceptions\IminifyException;
+use Mozex\Iminify\Exceptions\TransportException;
 use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Http\ApiResponse;
 use Psr\Http\Message\StreamInterface;
+use RuntimeException;
 
 /**
  * A file on its way from the API. Nothing is read until you ask for it, so a large file
@@ -30,20 +32,28 @@ class Download
 
     public static function fromResponse(ApiResponse $response): self
     {
-        $length = $response->header('content-length');
-
         return new self(
             $response->body,
             self::fileName($response->header('content-disposition')),
             $response->header('content-type'),
-            $response->header('content-encoding') === null && $length !== null && preg_match('/\A\d+\z/', $length) === 1 ? (int) $length : null,
+            self::fileSize($response),
             $response->rateLimit(),
         );
     }
 
     public function contents(): string
     {
-        return (string) $this->body;
+        if ($this->body->isSeekable()) {
+            $this->body->rewind();
+        }
+
+        $contents = '';
+
+        while (! $this->body->eof()) {
+            $contents .= $this->read();
+        }
+
+        return $contents;
     }
 
     /**
@@ -64,7 +74,7 @@ class Download
         $written = 0;
 
         while (! $this->body->eof()) {
-            $chunk = $this->body->read(1048576);
+            $chunk = $this->read();
             $bytes = @fwrite($stream, $chunk);
 
             if ($bytes === false || $bytes < strlen($chunk)) {
@@ -95,7 +105,7 @@ class Download
             $written = $this->writeToFile($temporary);
 
             if ($written === 0 || ($this->size !== null && $written !== $this->size)) {
-                throw new UnexpectedResponseException("The download ended after {$written} bytes".($this->size === null ? '.' : " of {$this->size}."));
+                throw UnexpectedResponseException::incompleteDownload($written, $this->size);
             }
 
             $mode = is_file($path) ? fileperms($path) : false;
@@ -113,6 +123,19 @@ class Download
             if (is_file($temporary)) {
                 unlink($temporary);
             }
+        }
+    }
+
+    /**
+     * A streaming client reads the body only now, long after the call returned, so a connection
+     * lost mid-file has to end in this package's exception here.
+     */
+    protected function read(): string
+    {
+        try {
+            return $this->body->read(1048576);
+        } catch (RuntimeException $exception) {
+            throw new TransportException("The download broke off: {$exception->getMessage()}", 0, $exception);
         }
     }
 
@@ -166,5 +189,19 @@ class Download
         $name = basename(str_replace('\\', '/', $name));
 
         return in_array($name, ['', '.', '..'], true) ? null : $name;
+    }
+
+    /**
+     * An encoded body's length counts the encoded bytes, so it says nothing about the file.
+     */
+    protected static function fileSize(ApiResponse $response): ?int
+    {
+        $length = $response->header('content-length');
+
+        if ($length === null || $response->header('content-encoding') !== null) {
+            return null;
+        }
+
+        return preg_match('/\A\d+\z/', $length) === 1 ? (int) $length : null;
     }
 }

@@ -33,7 +33,7 @@ class Images extends ApiResource
     {
         $response = $this->transporter->send(ApiRequest::get('images', $query));
 
-        return $this->parse(fn (): Page => Page::from($response->json(), fn (array $image): Image => Image::from($image), $response->rateLimit()));
+        return $this->parse(fn (): Page => Page::from($response->json(), Image::from(...), $response->rateLimit()));
     }
 
     /**
@@ -201,7 +201,7 @@ class Images extends ApiResource
      */
     protected function ids(array $images): array
     {
-        return array_values(array_map(fn (string|Image $image): string => $this->id($image), $images));
+        return array_values(array_map($this->id(...), $images));
     }
 
     protected function toUpload(mixed $file, ?string $name): Upload

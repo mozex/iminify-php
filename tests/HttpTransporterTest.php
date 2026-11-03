@@ -34,7 +34,7 @@ describe('every request', function () {
     it('goes to the base address with the key, asks for JSON and names the client', function () {
         $http = new RecordingHttpClient([jsonResponse(['data' => []])]);
 
-        factoryAnswering($http)->make()->transporter()->send(ApiRequest::get('images', ['status' => 'failed', 'page' => 2, 'scan' => null]));
+        clientAnswering($http)->transporter()->send(ApiRequest::get('images', ['status' => 'failed', 'page' => 2, 'scan' => null]));
 
         $request = $http->requests[0];
 
@@ -55,8 +55,8 @@ describe('every request', function () {
     });
 
     it('sends JSON, and an empty body as an empty object', function () {
-        $http = new RecordingHttpClient([jsonResponse(['data' => []]), jsonResponse(['data' => []]), jsonResponse(['data' => []])]);
-        $transporter = factoryAnswering($http)->make()->transporter();
+        $http = new RecordingHttpClient(array_fill(0, 3, jsonResponse(['data' => []])));
+        $transporter = clientAnswering($http)->transporter();
 
         $transporter->send(ApiRequest::post('images', ['url' => 'https://a.test/b.webp', 'level' => null]));
         $transporter->send(ApiRequest::post('images/1/retry'));
@@ -80,7 +80,7 @@ describe('a multipart upload', function () {
     it('carries the fields and the bytes with a boundary only its header names', function () {
         $http = new RecordingHttpClient([jsonResponse(['data' => []], 202)]);
 
-        factoryAnswering($http)->make()->transporter()->send(ApiRequest::upload(
+        clientAnswering($http)->transporter()->send(ApiRequest::upload(
             'images',
             Upload::fromContents('the-bytes', 'photo.jpg'),
             ['ephemeral' => true, 'alt_text' => false, 'level' => 'smart', 'width' => 800, 'responsive_widths' => [480, 960], 'folder' => null],
@@ -105,14 +105,14 @@ describe('a multipart upload', function () {
     it('cannot have its header ended by a hostile file name', function () {
         $http = new RecordingHttpClient([jsonResponse(['data' => []], 202)]);
 
-        factoryAnswering($http)->make()->transporter()->send(ApiRequest::upload('images', Upload::fromContents('x', "a\"\r\nX-Evil: 1\r\n\r\n.jpg")));
+        clientAnswering($http)->transporter()->send(ApiRequest::upload('images', Upload::fromContents('x', "a\"\r\nX-Evil: 1\r\n\r\n.jpg")));
 
         expect((string) $http->requests[0]->getBody())
             ->toContain('filename="a%22%0D%0AX-Evil: 1%0D%0A%0D%0A.jpg"');
     });
 
     it('refuses a field that a form cannot carry', function () {
-        $transporter = factoryAnswering(new RecordingHttpClient)->make()->transporter();
+        $transporter = clientAnswering(new RecordingHttpClient)->transporter();
 
         expect(fn () => $transporter->send(ApiRequest::upload('images', Upload::fromContents('x', 'a.jpg'), ['level' => new stdClass])))
             ->toThrow(InvalidArgumentException::class, 'A form field takes a scalar');
@@ -124,8 +124,8 @@ describe('a multipart upload', function () {
         $handle = fopen('php://memory', 'r+b');
         fwrite($handle, 'from-resource');
         rewind($handle);
-        $http = new RecordingHttpClient([jsonResponse(['data' => []], 202), jsonResponse(['data' => []], 202), jsonResponse(['data' => []], 202)]);
-        $transporter = factoryAnswering($http)->make()->transporter();
+        $http = new RecordingHttpClient(array_fill(0, 3, jsonResponse(['data' => []], 202)));
+        $transporter = clientAnswering($http)->transporter();
 
         try {
             $transporter->send(ApiRequest::upload('images', Upload::fromPath($path, 'a.jpg')));
@@ -146,7 +146,7 @@ describe('a multipart upload', function () {
         fclose($handle);
         $http = new RecordingHttpClient;
 
-        expect(fn () => factoryAnswering($http)->make()->transporter()->send(ApiRequest::upload('images', $upload)))
+        expect(fn () => clientAnswering($http)->transporter()->send(ApiRequest::upload('images', $upload)))
             ->toThrow(InvalidArgumentException::class, 'was closed')
             ->and($http->requests)->toBe([]);
     });
@@ -163,7 +163,7 @@ describe('a multipart upload', function () {
         ftruncate($handle, 40 * 1024 * 1024);
         fclose($handle);
         $http = new RecordingHttpClient([jsonResponse(['data' => []], 202)]);
-        $transporter = factoryAnswering($http)->make()->transporter();
+        $transporter = clientAnswering($http)->transporter();
         gc_collect_cycles();
         memory_reset_peak_usage();
         $before = memory_get_usage();
@@ -198,7 +198,7 @@ describe('an error answer', function () {
         $http = new RecordingHttpClient([jsonResponse(['message' => 'The reason.', 'code' => $code], $status, ['Retry-After' => '7'])]);
 
         try {
-            factoryAnswering($http)->make()->transporter()->send(ApiRequest::get('images'));
+            clientAnswering($http)->transporter()->send(ApiRequest::get('images'));
             $this->fail('Nothing was thrown.');
         } catch (ApiException $exception) {
             expect($exception::class)->toBe($class)
@@ -231,7 +231,7 @@ describe('an error answer', function () {
         ], 422)]);
 
         try {
-            factoryAnswering($http)->make()->transporter()->send(ApiRequest::get('images'));
+            clientAnswering($http)->transporter()->send(ApiRequest::get('images'));
             $this->fail('Nothing was thrown.');
         } catch (ValidationException $exception) {
             expect($exception->errors)->toBe(['level' => ['The selected level is invalid.']]);
@@ -242,7 +242,7 @@ describe('an error answer', function () {
         $http = new RecordingHttpClient([new Response($status, ['Content-Type' => 'text/html'], '<html>Bad gateway</html>')]);
 
         try {
-            factoryAnswering($http)->make()->transporter()->send(ApiRequest::get('images'));
+            clientAnswering($http)->transporter()->send(ApiRequest::get('images'));
             $this->fail('Nothing was thrown.');
         } catch (ApiException $exception) {
             expect($exception::class)->toBe($class)
@@ -259,7 +259,7 @@ describe('an error answer', function () {
         $http = new RecordingHttpClient([$failure]);
 
         try {
-            factoryAnswering($http)->make()->transporter()->send(ApiRequest::get('images'));
+            clientAnswering($http)->transporter()->send(ApiRequest::get('images'));
             $this->fail('Nothing was thrown.');
         } catch (TransportException $exception) {
             expect($exception)->toBeInstanceOf(IminifyException::class)
@@ -271,7 +271,7 @@ describe('an error answer', function () {
     it('refuses a redirect rather than following it', function () {
         $http = new RecordingHttpClient([new Response(301, ['Location' => 'https://www.iminify.com/api/v1/images'])]);
 
-        expect(fn () => factoryAnswering($http)->make()->transporter()->send(ApiRequest::post('images')))
+        expect(fn () => clientAnswering($http)->transporter()->send(ApiRequest::post('images')))
             ->toThrow(UnexpectedResponseException::class, 'Set the base URI')
             ->and($http->requests)->toHaveCount(1);
     });
@@ -283,7 +283,7 @@ describe('a successful answer', function () {
             jsonResponse(['data' => []], 200, ['X-RateLimit-Limit' => '300', 'X-RateLimit-Remaining' => '299']),
             jsonResponse(['data' => []]),
         ]);
-        $transporter = factoryAnswering($http)->make()->transporter();
+        $transporter = clientAnswering($http)->transporter();
 
         $limited = $transporter->send(ApiRequest::get('images'))->rateLimit();
         $plain = $transporter->send(ApiRequest::get('images'))->rateLimit();
@@ -296,7 +296,7 @@ describe('a successful answer', function () {
 
     it('refuses a body that is not the JSON object the API answers with', function (string $body, string $message) {
         $http = new RecordingHttpClient([new Response(200, [], $body)]);
-        $response = factoryAnswering($http)->make()->transporter()->send(ApiRequest::get('images'));
+        $response = clientAnswering($http)->transporter()->send(ApiRequest::get('images'));
 
         expect(fn () => $response->data())->toThrow(UnexpectedResponseException::class, $message);
     })->with([
@@ -345,17 +345,15 @@ describe('the factory', function () {
                 ->and(str_contains($exception->getMessage(), 'SECRET'))->toBeFalse();
         }
     })->with([
-        'a line break' => ['SECRET
-123'],
+        'a line break' => ["SECRET\n123"],
         'a space' => ['SECRET 123'],
-        'a tab' => ['SECRET	123'],
+        'a tab' => ["SECRET\t123"],
     ]);
 
     it('takes a key shaped as the API issues them, trimmed', function () {
         $http = new RecordingHttpClient([jsonResponse(['data' => []])]);
 
-        factoryAnswering($http)->withApiKey(' 12|AbCdEf0123
-')->make()->transporter()->send(ApiRequest::get('account'));
+        factoryAnswering($http)->withApiKey(" 12|AbCdEf0123\n")->make()->transporter()->send(ApiRequest::get('account'));
 
         expect($http->requests[0]->getHeaderLine('Authorization'))->toBe('Bearer 12|AbCdEf0123');
     });

@@ -116,8 +116,9 @@ class HttpTransporter implements TransporterContract
         }
 
         foreach ($request->fields as $name => $value) {
+            $field = is_array($value) ? "{$name}[]" : $name;
+
             foreach (is_array($value) ? $value : [$value] as $item) {
-                $field = is_array($value) ? "{$name}[]" : $name;
                 Upload::write($body, "--{$boundary}\r\nContent-Disposition: form-data; name=\"{$this->quote($field)}\"\r\n\r\n{$this->formValue($item)}\r\n");
             }
         }

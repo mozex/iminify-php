@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\FnStream;
 use GuzzleHttp\Psr7\Utils;
 use Mozex\Iminify\Exceptions\IminifyException;
+use Mozex\Iminify\Exceptions\TransportException;
 use Mozex\Iminify\Exceptions\UnexpectedResponseException;
 use Mozex\Iminify\Http\ApiResponse;
 use Mozex\Iminify\Responses\Download;
+use Mozex\Iminify\Responses\RateLimit;
 
 /**
  * @param  array<string, string>  $headers
@@ -157,6 +160,23 @@ describe('saving a download', function () {
         'empty' => ['', []],
         'shorter than it said' => ['abc', ['content-length' => '10']],
     ]);
+
+    it('ends a connection lost mid-file in its own exception, leaving the file there untouched', function () {
+        $path = $this->folder.'/photo.webp';
+        file_put_contents($path, 'good');
+        $lost = fn (): Download => new Download(
+            FnStream::decorate(Utils::streamFor('bytes'), ['read' => fn (int $length): string => throw new RuntimeException('Connection lost')]),
+            null,
+            null,
+            null,
+            new RateLimit,
+        );
+
+        expect(fn () => $lost()->saveTo($path))->toThrow(TransportException::class, 'Connection lost')
+            ->and(fn () => $lost()->contents())->toThrow(TransportException::class, 'Connection lost')
+            ->and(file_get_contents($path))->toBe('good')
+            ->and(glob($this->folder.'/{,.}*.tmp', GLOB_BRACE))->toBe([]);
+    });
 
     it('says so when the folder is missing', function () {
         expect(fn () => downloadOf('x')->saveTo($this->folder.'/missing/photo.webp'))

@@ -20,6 +20,7 @@ use Mozex\Iminify\Iminify;
 use Mozex\Iminify\Responses\Image;
 use Mozex\Iminify\Tests\Fakes\RecordingHttpClient;
 use Mozex\Iminify\Tests\Fixtures;
+use Psr\Http\Message\RequestInterface;
 
 const IMAGE_ID = '9d3c5b8e-6f0a-4c1e-9b7d-2a4e8f1c6b35';
 const IMAGES_URL = 'https://www.iminify.com/api/v1/images';
@@ -195,10 +196,11 @@ describe('the calls on one image', function () {
     ]);
 
     it('ends a list it cannot read in its own exception too', function () {
-        $http = new RecordingHttpClient([jsonResponse(['data' => [['id' => 'a']]]), jsonResponse(['data' => ['not-an-image']])]);
+        $http = new RecordingHttpClient([jsonResponse(['message' => 'A proxy talking']), jsonResponse(['data' => [['id' => 'a']]]), jsonResponse(['data' => ['not-an-image']])]);
         $images = clientAnswering($http)->images();
 
         expect(fn () => $images->list())->toThrow(UnexpectedResponseException::class, 'could not read')
+            ->and(fn () => $images->list())->toThrow(UnexpectedResponseException::class, 'could not read')
             ->and(fn () => $images->renameMany(['a'], 'b'))->toThrow(UnexpectedResponseException::class, 'could not read');
     });
 
@@ -436,7 +438,7 @@ it('uploads an image, waits for it and saves the result', function () {
     expect($finished->status)->toBe(ImageStatus::Completed)
         ->and($written)->toBe(11)
         ->and($saved)->toBe('the-smaller')
-        ->and(array_map(fn ($request): string => $request->getMethod().' '.$request->getUri()->getPath(), $http->requests))->toBe([
+        ->and(array_map(fn (RequestInterface $request): string => $request->getMethod().' '.$request->getUri()->getPath(), $http->requests))->toBe([
             'POST /api/v1/images',
             'GET /api/v1/images/'.IMAGE_ID,
             'GET /api/v1/images/'.IMAGE_ID,

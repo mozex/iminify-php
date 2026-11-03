@@ -30,4 +30,9 @@ class UnexpectedResponseException extends IminifyException
     {
         return new self('Iminify answered without the `data` key its answers carry.');
     }
+
+    public static function incompleteDownload(int $written, ?int $size): self
+    {
+        return new self("The download ended after {$written} bytes".($size === null ? '.' : " of {$size}."));
+    }
 }

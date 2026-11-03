@@ -48,7 +48,7 @@ class Page implements Countable, IteratorAggregate
         $lastPage = $meta['last_page'] ?? $currentPage;
 
         return new self(
-            array_values(array_map(fn (array $attributes) => $item($attributes), $body['data'] ?? [])),
+            array_values(array_map(fn (array $attributes) => $item($attributes), $body['data'] ?? null)),
             $currentPage,
             $lastPage,
             $meta['per_page'] ?? 0,
