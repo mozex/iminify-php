@@ -7,6 +7,7 @@ namespace Mozex\Iminify\Http;
 use InvalidArgumentException;
 use Mozex\Iminify\Exceptions\TransportException;
 use Psr\Http\Message\StreamInterface;
+use RuntimeException;
 
 /**
  * A file on its way to the API: a path, the bytes or an open stream, under the name the
@@ -79,24 +80,33 @@ class Upload
     }
 
     /**
-     * Copies the file into an open stream without holding it all in memory.
+     * Copies the file into an open stream without holding it all in memory. What it copied has
+     * to come to what it measured, so a file that broke off or changed while being read is
+     * never sent as a complete one.
      *
      * @param  resource  $target
      */
     public function copyTo(mixed $target): void
     {
-        if ($this->source instanceof StreamInterface) {
-            while (! $this->source->eof()) {
-                self::write($target, $this->source->read(1048576));
-            }
+        $expected = $this->size();
+        $copied = $this->copied($target);
 
-            return;
+        if ($expected !== null && $copied !== $expected) {
+            throw new TransportException("The file came to {$copied} bytes of the {$expected} it should have, so it wasn't sent: it broke off or changed while being read.");
+        }
+    }
+
+    /**
+     * @param  resource  $target
+     */
+    protected function copied(mixed $target): int
+    {
+        if ($this->source instanceof StreamInterface) {
+            return $this->copyStream($this->source, $target);
         }
 
         if (is_resource($this->source)) {
-            self::copy($this->source, $target);
-
-            return;
+            return self::copy($this->source, $target);
         }
 
         if (! is_string($this->source)) {
@@ -106,7 +116,7 @@ class Upload
         if (! $this->isPath) {
             self::write($target, $this->source);
 
-            return;
+            return strlen($this->source);
         }
 
         $handle = @fopen($this->source, 'rb');
@@ -116,10 +126,32 @@ class Upload
         }
 
         try {
-            self::copy($handle, $target);
+            return self::copy($handle, $target);
         } finally {
             fclose($handle);
         }
+    }
+
+    /**
+     * @param  resource  $target
+     */
+    protected function copyStream(StreamInterface $source, mixed $target): int
+    {
+        $copied = 0;
+
+        try {
+            while (! $source->eof()) {
+                $chunk = $source->read(1048576);
+                self::write($target, $chunk);
+                $copied += strlen($chunk);
+            }
+        } catch (TransportException $exception) {
+            throw $exception;
+        } catch (RuntimeException $exception) {
+            throw new TransportException("The file couldn't be read: {$exception->getMessage()}", 0, $exception);
+        }
+
+        return $copied;
     }
 
     /**
@@ -140,11 +172,15 @@ class Upload
      * @param  resource  $source
      * @param  resource  $target
      */
-    protected static function copy(mixed $source, mixed $target): void
+    protected static function copy(mixed $source, mixed $target): int
     {
-        if (@stream_copy_to_stream($source, $target) === false) {
+        $copied = @stream_copy_to_stream($source, $target);
+
+        if ($copied === false) {
             throw new TransportException("Couldn't write the upload to a temporary stream: the disk may be full.");
         }
+
+        return $copied;
     }
 
     /**

@@ -2,9 +2,43 @@
 
 declare(strict_types=1);
 
+use GuzzleHttp\Psr7\FnStream;
 use GuzzleHttp\Psr7\NoSeekStream;
 use GuzzleHttp\Psr7\Utils;
+use Mozex\Iminify\Exceptions\TransportException;
 use Mozex\Iminify\Http\Upload;
+use Mozex\Iminify\Tests\Fakes\ShortWriteStream;
+
+describe('copying an upload', function () {
+    it('stops rather than send a file that came to less than it measured', function () {
+        $stream = FnStream::decorate(Utils::streamFor('bytes'), ['getSize' => fn (): int => 100]);
+        $target = fopen('php://memory', 'r+b');
+
+        expect(fn () => Upload::fromStream($stream, 'a.jpg')->copyTo($target))->toThrow(TransportException::class, '5 bytes of the 100');
+    });
+
+    it('ends a stream that fails mid-read in its own exception', function () {
+        $stream = FnStream::decorate(Utils::streamFor('bytes'), ['read' => fn (int $length): string => throw new RuntimeException('Disk gone')]);
+        $target = fopen('php://memory', 'r+b');
+
+        expect(fn () => Upload::fromStream($stream, 'a.jpg')->copyTo($target))->toThrow(TransportException::class, 'Disk gone');
+    });
+
+    it('stops at a write that comes up short, as on a full disk', function () {
+        expect(fn () => Upload::fromContents('bytes', 'a.jpg')->copyTo(ShortWriteStream::open()))->toThrow(TransportException::class, 'temporary stream');
+    });
+
+    it('copies a stream that says nothing of its size, having nothing to hold it to', function () {
+        $stream = FnStream::decorate(Utils::streamFor('bytes'), ['getSize' => fn (): ?int => null]);
+        $target = fopen('php://memory', 'r+b');
+
+        Upload::fromStream($stream, 'a.jpg')->copyTo($target);
+
+        rewind($target);
+
+        expect(stream_get_contents($target))->toBe('bytes');
+    });
+});
 
 describe('the size of an upload', function () {
     it('reads the file at a path', function () {
