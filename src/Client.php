@@ -7,6 +7,7 @@ namespace Mozex\Iminify;
 use Closure;
 use Mozex\Iminify\Contracts\TransporterContract;
 use Mozex\Iminify\Resources\Account;
+use Mozex\Iminify\Resources\Groups;
 use Mozex\Iminify\Resources\Images;
 
 class Client
@@ -22,6 +23,11 @@ class Client
     public function images(): Images
     {
         return new Images($this->transporter, $this->sleep);
+    }
+
+    public function groups(): Groups
+    {
+        return new Groups($this->transporter, $this->sleep);
     }
 
     public function account(): Account
