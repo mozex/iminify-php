@@ -60,7 +60,7 @@ class Factory
      */
     public function withBaseUri(string $baseUri): static
     {
-        if (preg_match('#\Ahttps?://[^/\s]+#i', $baseUri) !== 1) {
+        if (preg_match('~\Ahttps?://[^/\s?#]+(?:/[^\s?#]*)?\z~i', $baseUri) !== 1) {
             throw new InvalidArgumentException("The base URI must be an http or https address, [{$baseUri}] given.");
         }
 
@@ -112,8 +112,15 @@ class Factory
         return $this;
     }
 
+    /**
+     * A header sent with every request, other than the three the client sets itself.
+     */
     public function withHttpHeader(string $name, string $value): static
     {
+        if (in_array(strtolower($name), ['authorization', 'accept', 'iminify-client'], true)) {
+            throw new InvalidArgumentException("The client sets [{$name}] itself: use withApiKey() for the key and withClientIdentifier() for the client's name.");
+        }
+
         $this->headers[$name] = $value;
 
         return $this;

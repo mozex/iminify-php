@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace Mozex\Iminify\Tests\Fakes;
 
 /**
- * Stands for a client like Symfony's, which follows redirects until told not to.
+ * Stands for a client like Symfony's, which follows redirects until told not to, and hands back
+ * a new client when told.
  */
 class FollowingHttpClient extends RecordingHttpClient
 {
@@ -17,8 +18,9 @@ class FollowingHttpClient extends RecordingHttpClient
      */
     public function withOptions(array $options): static
     {
-        $this->options = $options;
+        $client = clone $this;
+        $client->options = $options;
 
-        return $this;
+        return $client;
     }
 }

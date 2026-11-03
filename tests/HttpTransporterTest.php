@@ -339,9 +339,10 @@ describe('the factory', function () {
             }
         };
 
-        $factory->withApiKey('a-key')->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory)->make();
+        $client = $factory->withApiKey('a-key')->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory)->make();
 
-        expect($discovered->options)->toBe(['max_redirects' => 0]);
+        expect(httpClientOf($client)->options)->toBe(['max_redirects' => 0])
+            ->and($discovered->options)->toBe([]);
     });
 
     it('leaves a client it was given as it was set up', function () {
@@ -363,18 +364,14 @@ describe('the factory', function () {
             }
         })->withApiKey('a-key')->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory);
 
-        $httpClientOf = fn (Client $client): ClientInterface => (fn (): ClientInterface => $this->client)->call($client->transporter());
-
         it('reaches a client found that takes options, beside redirects off', function () use ($finding) {
-            $found = new FollowingHttpClient;
+            $client = $finding(new FollowingHttpClient)->withTimeout(30)->make();
 
-            $finding($found)->withTimeout(30)->make();
-
-            expect($found->options)->toBe(['max_redirects' => 0, 'timeout' => 30, 'max_duration' => 30]);
+            expect(httpClientOf($client)->options)->toBe(['max_redirects' => 0, 'timeout' => 30, 'max_duration' => 30]);
         });
 
-        it('makes Guzzle again with it, since one found cannot be changed', function () use ($finding, $httpClientOf) {
-            $client = $httpClientOf($finding(new GuzzleClient)->withTimeout(30)->make());
+        it('makes Guzzle again with it, since one found cannot be changed', function () use ($finding) {
+            $client = httpClientOf($finding(new GuzzleClient)->withTimeout(30)->make());
 
             expect($client)->toBeInstanceOf(GuzzleClient::class)
                 ->and((fn (): array => $this->config)->call($client)['timeout'])->toBe(30);
@@ -384,10 +381,10 @@ describe('the factory', function () {
             $finding(new RecordingHttpClient)->withTimeout(30)->make();
         })->throws(InvalidArgumentException::class, 'withHttpClient()');
 
-        it('leaves any client found as it stands without one', function () use ($finding, $httpClientOf) {
+        it('leaves any client found as it stands without one', function () use ($finding) {
             $found = new RecordingHttpClient;
 
-            expect($httpClientOf($finding($found)->make()))->toBe($found);
+            expect(httpClientOf($finding($found)->make()))->toBe($found);
         });
 
         it('leaves a client it was given with the timeout it was given', function () {
@@ -402,6 +399,20 @@ describe('the factory', function () {
             (new Factory)->withTimeout(0);
         })->throws(InvalidArgumentException::class, 'at least one second');
     });
+
+    it('refuses a header the client sets itself, in any case, rather than let one spelling through', function (string $name) {
+        expect(fn () => (new Factory)->withHttpHeader($name, 'other'))->toThrow(InvalidArgumentException::class, 'sets');
+    })->with(['Authorization', 'authorization', 'ACCEPT', 'iminify-client']);
+
+    it('refuses a base address that a path could not be added to', function (string $uri) {
+        expect(fn () => (new Factory)->withBaseUri($uri))->toThrow(InvalidArgumentException::class, 'base URI');
+    })->with([
+        'a query' => ['https://example.com/api/v1?x=1'],
+        'a fragment' => ['https://example.com/api/v1#top'],
+        'a line break' => ["https://example.com/api/v1\n"],
+        'a space' => ['https://example.com/api v1'],
+        'no host' => ['https:///api'],
+    ]);
 
     it('refuses a key holding what a header cannot carry, without quoting it', function (string $key) {
         try {

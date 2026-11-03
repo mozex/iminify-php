@@ -13,6 +13,7 @@ use Mozex\Iminify\Iminify;
 use Mozex\Iminify\Responses\Download;
 use Mozex\Iminify\Tests\Fakes\RecordingHttpClient;
 use Mozex\Iminify\Webhooks\WebhookVerifier;
+use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -26,6 +27,14 @@ function factoryAnswering(RecordingHttpClient $http): Factory
         ->withRequestFactory(new HttpFactory)
         ->withStreamFactory(new HttpFactory)
         ->withSleep(fn (float $seconds) => null);
+}
+
+/**
+ * The PSR-18 client a client ended up with.
+ */
+function httpClientOf(Client $client): ClientInterface
+{
+    return (fn (): ClientInterface => $this->client)->call($client->transporter());
 }
 
 function clientAnswering(RecordingHttpClient $http): Client
