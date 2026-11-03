@@ -52,7 +52,8 @@
     },
     "suggest": {
         "phpunit/phpunit": "For the assertions of Testing\\FakeClient",
-        "spatie/image-optimizer": "For Spatie\\IminifyOptimizer, which needs version 1.10 or newer"
+        "spatie/image-optimizer": "For Spatie\\IminifyOptimizer, which needs version 1.10 or newer",
+        "spatie/image": "To optimize an image through Spatie\\IminifyOptimizer as you save it, and for Browsershot to do the same"
     },
     "autoload": {
         "psr-4": {

@@ -27,7 +27,7 @@ const IMAGES_URL = 'https://www.iminify.com/api/v1/images';
 
 describe('sending an image', function () {
     it('uploads a path with its options and answers the queued image', function () {
-        $path = tempnam(sys_get_temp_dir(), 'iminify').'.jpg';
+        $path = sys_get_temp_dir().'/iminify-'.bin2hex(random_bytes(6)).'.jpg';
         file_put_contents($path, 'the-bytes');
         $http = new RecordingHttpClient([jsonResponse(['data' => Fixtures::queuedImage(['id' => IMAGE_ID])], 202, ['X-RateLimit-Remaining' => '299'])]);
 
