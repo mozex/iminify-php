@@ -34,16 +34,26 @@ class Factory
 
     protected ?Closure $sleep = null;
 
+    /**
+     * A character a header can't carry is refused here, in words that don't quote the key,
+     * or the HTTP client's own refusal would put it in an exception message.
+     */
     public function withApiKey(#[SensitiveParameter] string $apiKey): static
     {
-        $this->apiKey = trim($apiKey);
+        $apiKey = trim($apiKey);
+
+        if ($apiKey !== '' && preg_match('/\A[\x21-\x7E]+\z/', $apiKey) !== 1) {
+            throw new InvalidArgumentException('That API key holds characters a key never has. Copy it again from Settings > API Tokens.');
+        }
+
+        $this->apiKey = $apiKey;
 
         return $this;
     }
 
     /**
-     * Leave it out for the live API. A redirect is never followed, so the address has to be
-     * the one the API answers at.
+     * Leave it out for the live API. The address has to be the one the API answers at, since
+     * the bare domain answers with a redirect, which ends in an exception.
      */
     public function withBaseUri(string $baseUri): static
     {
@@ -57,7 +67,9 @@ class Factory
     }
 
     /**
-     * Any PSR-18 client. Leave it out and the one installed is discovered.
+     * Any PSR-18 client, set up as you need it: give it a timeout, and don't let it follow
+     * redirects, since a POST can arrive as a GET. Leave it out and the one installed is
+     * discovered, with redirects off.
      */
     public function withHttpClient(ClientInterface $client): static
     {
@@ -116,7 +128,7 @@ class Factory
         }
 
         return new Client(new HttpTransporter(
-            $this->httpClient ?? Psr18ClientDiscovery::find(),
+            $this->httpClient ?? $this->discoverHttpClient(),
             $this->requestFactory ?? Psr17FactoryDiscovery::findRequestFactory(),
             $this->streamFactory ?? Psr17FactoryDiscovery::findStreamFactory(),
             $this->baseUri,
@@ -126,5 +138,31 @@ class Factory
                 'Iminify-Client' => $this->clientIdentifier ?? ClientIdentifier::for('php', 'mozex/iminify-php'),
             ] + $this->headers,
         ), $this->sleep);
+    }
+
+    /**
+     * The key stays out of a var_dump() or print_r() of the factory.
+     *
+     * @return array<string, mixed>
+     */
+    public function __debugInfo(): array
+    {
+        return ['apiKey' => $this->apiKey === null ? null : '[hidden]', 'baseUri' => $this->baseUri];
+    }
+
+    /**
+     * Discovery prefers Symfony's client where it's installed, and that one follows redirects
+     * unless told not to: a POST to the bare domain would arrive as a GET and read as a success.
+     */
+    protected function discoverHttpClient(): ClientInterface
+    {
+        $client = $this->findHttpClient();
+
+        return method_exists($client, 'withOptions') ? $client->withOptions(['max_redirects' => 0]) : $client;
+    }
+
+    protected function findHttpClient(): ClientInterface
+    {
+        return Psr18ClientDiscovery::find();
     }
 }

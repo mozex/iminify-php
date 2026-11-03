@@ -50,7 +50,8 @@ class HttpTransporter implements TransporterContract
     }
 
     /**
-     * The key stays out of a var_dump() and of anything that logs one.
+     * The key stays out of a var_dump() or print_r(). Symfony's dump() and var_export() read
+     * the properties themselves.
      *
      * @return array<string, mixed>
      */

@@ -9,7 +9,7 @@ use SensitiveParameter;
 class Iminify
 {
     /**
-     * The address the API answers at. The bare domain redirects here, and a redirect is never followed.
+     * The address the API answers at. The bare domain answers with a redirect here, which ends in an exception.
      */
     public const BASE_URI = 'https://www.iminify.com/api/v1';
 

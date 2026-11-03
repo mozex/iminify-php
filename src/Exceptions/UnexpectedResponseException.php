@@ -11,7 +11,7 @@ class UnexpectedResponseException extends IminifyException
 {
     public static function redirect(int $status, ?string $location): self
     {
-        return new self("Iminify answered HTTP {$status} with a redirect to ".($location ?? 'nowhere').'. Set the base URI to the address the API lives at: the client never follows a redirect, because a POST can arrive as a GET.');
+        return new self("Iminify answered HTTP {$status} with a redirect to ".($location ?? 'nowhere').'. Set the base URI to the address the API answers at: following a redirect can turn a POST into a GET.');
     }
 
     public static function notJson(int $status): self

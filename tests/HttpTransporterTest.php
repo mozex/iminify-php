@@ -6,6 +6,7 @@ use GuzzleHttp\Exception\ConnectException;
 use GuzzleHttp\Psr7\HttpFactory;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
+use Mozex\Iminify\Client;
 use Mozex\Iminify\Exceptions\AccessDeniedException;
 use Mozex\Iminify\Exceptions\ApiException;
 use Mozex\Iminify\Exceptions\AuthenticationException;
@@ -23,7 +24,10 @@ use Mozex\Iminify\Exceptions\ValidationException;
 use Mozex\Iminify\Factory;
 use Mozex\Iminify\Http\ApiRequest;
 use Mozex\Iminify\Http\Upload;
+use Mozex\Iminify\Iminify;
+use Mozex\Iminify\Tests\Fakes\FollowingHttpClient;
 use Mozex\Iminify\Tests\Fakes\RecordingHttpClient;
+use Psr\Http\Client\ClientInterface;
 
 describe('every request', function () {
     it('goes to the base address with the key, asks for JSON and names the client', function () {
@@ -39,11 +43,14 @@ describe('every request', function () {
             ->and($request->getHeaderLine('Iminify-Client'))->toMatch('/\Aphp\/\d+\.\d+\.\d+/');
     });
 
-    it('keeps the key out of a dump of the client', function () {
-        $client = factoryAnswering(new RecordingHttpClient)->make();
+    it('keeps the key out of a dump of the client and the factory', function () {
+        $factory = factoryAnswering(new RecordingHttpClient);
+        $client = $factory->make();
 
         expect(print_r($client, true))->not->toContain('test-key')
-            ->and(print_r($client->transporter(), true))->toContain('[hidden]');
+            ->and(print_r($client->transporter(), true))->toContain('[hidden]')
+            ->and(print_r($factory, true))->not->toContain('test-key')
+            ->and(print_r($factory, true))->toContain('[hidden]');
     });
 
     it('sends JSON, and an empty body as an empty object', function () {
@@ -224,7 +231,7 @@ describe('an error answer', function () {
         $http = new RecordingHttpClient([new Response(301, ['Location' => 'https://www.iminify.com/api/v1/images'])]);
 
         expect(fn () => factoryAnswering($http)->make()->transporter()->send(ApiRequest::post('images')))
-            ->toThrow(UnexpectedResponseException::class, 'never follows a redirect')
+            ->toThrow(UnexpectedResponseException::class, 'Set the base URI')
             ->and($http->requests)->toHaveCount(1);
     });
 });
@@ -259,6 +266,59 @@ describe('a successful answer', function () {
 });
 
 describe('the factory', function () {
+    it('makes a client with whatever HTTP client it discovers', function () {
+        expect(Iminify::client('a-key'))->toBeInstanceOf(Client::class);
+    });
+
+    it('turns redirects off on a client it discovered, which may follow them', function () {
+        $discovered = new FollowingHttpClient;
+        $factory = new class($discovered) extends Factory
+        {
+            public function __construct(protected ClientInterface $discovered) {}
+
+            protected function findHttpClient(): ClientInterface
+            {
+                return $this->discovered;
+            }
+        };
+
+        $factory->withApiKey('a-key')->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory)->make();
+
+        expect($discovered->options)->toBe(['max_redirects' => 0]);
+    });
+
+    it('leaves a client it was given as it was set up', function () {
+        $given = new FollowingHttpClient;
+
+        (new Factory)->withApiKey('a-key')->withHttpClient($given)->withRequestFactory(new HttpFactory)->withStreamFactory(new HttpFactory)->make();
+
+        expect($given->options)->toBe([]);
+    });
+
+    it('refuses a key holding what a header cannot carry, without quoting it', function (string $key) {
+        try {
+            (new Factory)->withApiKey($key);
+            $this->fail('Nothing was thrown.');
+        } catch (InvalidArgumentException $exception) {
+            expect($exception->getMessage())->toContain('Settings > API Tokens')
+                ->and(str_contains($exception->getMessage(), 'SECRET'))->toBeFalse();
+        }
+    })->with([
+        'a line break' => ['SECRET
+123'],
+        'a space' => ['SECRET 123'],
+        'a tab' => ['SECRET	123'],
+    ]);
+
+    it('takes a key shaped as the API issues them, trimmed', function () {
+        $http = new RecordingHttpClient([jsonResponse(['data' => []])]);
+
+        factoryAnswering($http)->withApiKey(' 12|AbCdEf0123
+')->make()->transporter()->send(ApiRequest::get('account'));
+
+        expect($http->requests[0]->getHeaderLine('Authorization'))->toBe('Bearer 12|AbCdEf0123');
+    });
+
     it('refuses to make a client without a key', function (?string $key) {
         $factory = (new Factory)->withHttpClient(new RecordingHttpClient);
 
