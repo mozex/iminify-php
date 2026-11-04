@@ -51,7 +51,7 @@ A client found through discovery has its redirects turned off. If you pass your 
 
 ## The Iminify-Client header
 
-Every request says which client sent it, in an `Iminify-Client` header such as `php/1.2.0`. Iminify uses it only for its own figures on which clients are in use. It keeps the name `php` or `laravel` with a plain `x.y.z` version and at most a short tag, and quietly ignores anything else, so a header can't fail a request.
+Every request says which client sent it, in an `Iminify-Client` header such as `php/1.2.0`. Iminify uses it only for its own figures on which clients are in use. It keeps the name `php` or `laravel` with a plain `x.y.z` version and at most a short tag, and quietly ignores a value it can't read, never refusing the call for it.
 
 ## A call this client doesn't have yet
 

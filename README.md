@@ -1,34 +1,35 @@
-[![Iminify PHP](https://raw.githubusercontent.com/mozex/iminify-php/main/art/banner.png)](https://mozex.dev/docs/iminify-php)
+[![Iminify PHP](https://raw.githubusercontent.com/mozex/iminify-php/main/art/banner.png)](https://www.iminify.com/docs/php)
 
 # Iminify PHP
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/mozex/iminify-php.svg?style=flat-square)](https://packagist.org/packages/mozex/iminify-php)
 [![GitHub Checks Workflow Status](https://img.shields.io/github/actions/workflow/status/mozex/iminify-php/checks.yml?branch=main&label=checks&style=flat-square)](https://github.com/mozex/iminify-php/actions/workflows/checks.yml)
-[![Docs](https://img.shields.io/badge/docs-mozex.dev-10B981?style=flat-square)](https://mozex.dev/docs/iminify-php/v1)
+[![Docs](https://img.shields.io/badge/docs-www.iminify.com-10B981?style=flat-square)](https://www.iminify.com/docs/php)
 [![License](https://img.shields.io/github/license/mozex/iminify-php.svg?style=flat-square)](https://packagist.org/packages/mozex/iminify-php)
 [![Total Downloads](https://img.shields.io/packagist/dt/mozex/iminify-php.svg?style=flat-square)](https://packagist.org/packages/mozex/iminify-php)
 
 The PHP client for the [Iminify](https://www.iminify.com) image optimization API. Send an image, wait for it and save the smaller file in a few lines, and reach the rest of the API too: upload groups, page scans, site crawls, weekly checks, your account and webhook signatures. It also has an optimizer for Spatie's image packages, so a chain, `spatie/image` or Browsershot can compress through Iminify with no binaries on the server.
 
-> **[Read the full documentation at mozex.dev](https://mozex.dev/docs/iminify-php/v1)**: searchable docs, version requirements, detailed changelog, and more.
+> **[Read the full documentation at www.iminify.com](https://www.iminify.com/docs/php)**: every guide and reference page, updated with each release.
 
 ## Table of Contents
 
-- [Introduction](https://mozex.dev/docs/iminify-php/v1)
+- [Introduction](https://www.iminify.com/docs/php)
 - Usage
-  - [Images](https://mozex.dev/docs/iminify-php/v1/usage/images)
-  - [Upload Groups](https://mozex.dev/docs/iminify-php/v1/usage/upload-groups)
-  - [Page Scans](https://mozex.dev/docs/iminify-php/v1/usage/page-scans)
-  - [Site Crawls](https://mozex.dev/docs/iminify-php/v1/usage/site-crawls)
-  - [Weekly Checks](https://mozex.dev/docs/iminify-php/v1/usage/weekly-checks)
-  - [Account](https://mozex.dev/docs/iminify-php/v1/usage/account)
-  - [Webhooks](https://mozex.dev/docs/iminify-php/v1/usage/webhooks)
+  - [Images](https://www.iminify.com/docs/php/usage/images)
+  - [Upload Groups](https://www.iminify.com/docs/php/usage/upload-groups)
+  - [Page Scans](https://www.iminify.com/docs/php/usage/page-scans)
+  - [Site Crawls](https://www.iminify.com/docs/php/usage/site-crawls)
+  - [Weekly Checks](https://www.iminify.com/docs/php/usage/weekly-checks)
+  - [Account](https://www.iminify.com/docs/php/usage/account)
+  - [Webhooks](https://www.iminify.com/docs/php/usage/webhooks)
 - Integrations
-  - [Spatie's Image Packages](https://mozex.dev/docs/iminify-php/v1/integrations/spatie)
+  - [Spatie's Image Packages](https://www.iminify.com/docs/php/integrations/spatie)
+  - [AI Coding Assistants](https://www.iminify.com/docs/php/integrations/ai-assistants)
 - Reference
-  - [Configuration](https://mozex.dev/docs/iminify-php/v1/reference/configuration)
-  - [Error Handling](https://mozex.dev/docs/iminify-php/v1/reference/error-handling)
-  - [Testing](https://mozex.dev/docs/iminify-php/v1/reference/testing)
+  - [Configuration](https://www.iminify.com/docs/php/reference/configuration)
+  - [Error Handling](https://www.iminify.com/docs/php/reference/error-handling)
+  - [Testing](https://www.iminify.com/docs/php/reference/testing)
 
 ## Support This Project
 
@@ -42,15 +43,15 @@ Business sponsors get logo placement in package READMEs. [**See sponsorship tier
 
 The API works in the background, so every long-running record has a `wait()` that backs off between reads, waits out a short rate limit and stops at the timeout you give it.
 
-A refusal throws its own exception: `DailyLimitReachedException` for a spent daily allowance, `RateLimitedException` with its `$retryAfter` for a short limit, `ValidationException` with its `$errors` for a bad field, and [the rest](https://mozex.dev/docs/iminify-php/v1/reference/error-handling).
+A refusal throws its own exception: `DailyLimitReachedException` for a spent daily allowance, `RateLimitedException` with its `$retryAfter` for a short limit, `ValidationException` with its `$errors` for a bad field, and [the rest](https://www.iminify.com/docs/php/reference/error-handling).
 
-`IminifyOptimizer` takes jpegoptim's place in a [Spatie chain](https://mozex.dev/docs/iminify-php/v1/integrations/spatie), so the server needs no binaries, and a failure leaves the file exactly as it was. For your own tests, [`FakeClient`](https://mozex.dev/docs/iminify-php/v1/reference/testing) answers from a queue through the real resources, so your code reads the same objects and catches the same exceptions as it does for real.
+`IminifyOptimizer` takes jpegoptim's place in a [Spatie chain](https://www.iminify.com/docs/php/integrations/spatie), so the server needs no binaries, and a failure leaves the file exactly as it was. For your own tests, [`FakeClient`](https://www.iminify.com/docs/php/reference/testing) answers from a queue through the real resources, so your code reads the same objects and catches the same exceptions as it does for real.
 
 It's built on PSR-18, so it uses Guzzle, Symfony's client or whatever your project already has.
 
 ## Installation
 
-> **Requires [PHP 8.2+](https://php.net/releases/)** - see [all version requirements](https://mozex.dev/docs/iminify-php/v1/requirements)
+> **Requires [PHP 8.2+](https://php.net/releases/)** - see [all version requirements](https://packagist.org/packages/mozex/iminify-php)
 
 ```bash
 composer require mozex/iminify-php
@@ -161,17 +162,15 @@ use Mozex\Iminify\Webhooks\WebhookVerifier;
 $event = (new WebhookVerifier($secret))->verify($rawBody, $signatureHeader);
 ```
 
-That's the common path. Scans, crawls, weekly checks and every option are in the [documentation](https://mozex.dev/docs/iminify-php/v1).
+That's the common path. Scans, crawls, weekly checks and every option are in the [documentation](https://www.iminify.com/docs/php).
 
 ## Resources
 
-Visit the [documentation site](https://mozex.dev/docs/iminify-php/v1) for searchable docs auto-updated from this repository.
+Visit the [documentation at www.iminify.com](https://www.iminify.com/docs/php) for every guide and reference page, updated from this repository with each release.
 
-- **[AI Integration](https://mozex.dev/docs/iminify-php/v1/ai-integration)**: Use this package with AI coding assistants via Context7 and Laravel Boost
-- **[Requirements](https://mozex.dev/docs/iminify-php/v1/requirements)**: PHP and dependency versions
-- **[Changelog](https://mozex.dev/docs/iminify-php/v1/changelog)**: Release history with linked pull requests and diffs
-- **[Contributing](https://mozex.dev/docs/iminify-php/v1/contributing)**: Development setup, code quality, and PR guidelines
-- **[Questions & Issues](https://mozex.dev/docs/iminify-php/v1/questions-and-issues)**: Bug reports, feature requests, and help
+- **[Requirements](https://packagist.org/packages/mozex/iminify-php)**: PHP and dependency versions
+- **[Changelog](https://github.com/mozex/iminify-php/blob/main/CHANGELOG.md)**: Release history with linked pull requests and diffs
+- **[Questions & Issues](https://github.com/mozex/iminify-php/issues/new/choose)**: Bug reports, feature requests, and help
 - **[Security](mailto:hello@mozex.dev)**: Report vulnerabilities directly via email
 
 ## License

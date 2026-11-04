@@ -3,7 +3,7 @@ title: Site crawls
 weight: 4
 ---
 
-A site crawl scans several pages of one site at once, with one report and one zip for the whole site. It comes with a paid plan. Everything here goes through `$client->crawls()`.
+A site crawl scans several pages of one site at once, with one report and one zip for the whole site. It comes with a paid plan. Everything here goes through `$client->crawls()`, and the API's [site crawls guide](https://www.iminify.com/docs/site-crawls) has every field of a crawl and its report.
 
 Start from a sitemap (an XML sitemap, a sitemap index or a text file with one address a line), or from a list of pages on one site:
 

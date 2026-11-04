@@ -3,7 +3,7 @@ title: Page scans
 weight: 3
 ---
 
-A page scan loads a web page in a real browser, finds every image it loads and compresses them all. It also writes a report of what the page received and how it used it: the largest contentful paint, oversized images, and images missing a width, height or alt text. Everything here goes through `$client->scans()`.
+A page scan loads a web page in a real browser, finds every image it loads and compresses them all. It also writes a report of what the page received and how it used it: the largest contentful paint, oversized images, and images missing a width, height or alt text. Everything here goes through `$client->scans()`, and the API's [page scans guide](https://www.iminify.com/docs/page-scans) has every field of a scan and its report.
 
 ```php
 $scan = $client->scans()->create('https://example.com/pricing', ['format' => 'webp', 'alt_text' => false]);

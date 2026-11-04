@@ -3,7 +3,7 @@ title: Weekly checks
 weight: 5
 ---
 
-A weekly check crawls a site every week and emails you what it found. It comes with a paid plan, and you make one from a crawl you already ran. Nothing runs and nothing is counted until its first run, a week later. Everything here goes through `$client->monitors()`.
+A weekly check crawls a site every week and emails you what it found. It comes with a paid plan, and you make one from a crawl you already ran. Nothing runs and nothing is counted until its first run, a week later. Everything here goes through `$client->monitors()`, and the API's [site checks guide](https://www.iminify.com/docs/site-checks) has what each check does.
 
 ```php
 $monitor = $client->monitors()->create($crawl);

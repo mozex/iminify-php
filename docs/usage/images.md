@@ -25,7 +25,7 @@ $image = $client->images()->upload(Upload::fromContents($bytes, 'team.jpg'));
 
 ### Options
 
-Options pass straight through to the API, so one the API adds later works without a new release of this package. An enum is sent as its value, and a null as nothing.
+Options are the fields of the API's [`POST /images`](https://www.iminify.com/docs/images#create-image), and pass straight through, so one the API adds later works without a new release of this package. An enum is sent as its value, and a null as nothing.
 
 ```php
 use Mozex\Iminify\Enums\CompressionLevel;

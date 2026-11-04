@@ -17,7 +17,7 @@ For your own tests, `FakeClient` answers from a queue through the real resources
 
 ## Installation
 
-> **Requires [PHP 8.2+](https://php.net/releases/)** - see [all version requirements](https://mozex.dev/docs/iminify-php/v1/requirements)
+> **Requires [PHP 8.2+](https://php.net/releases/)** - see [all version requirements](https://packagist.org/packages/mozex/iminify-php)
 
 ```bash
 composer require mozex/iminify-php
@@ -29,7 +29,7 @@ The client needs a PSR-18 HTTP client and PSR-17 factories, and finds what your 
 composer require guzzlehttp/guzzle
 ```
 
-You also need an API key: make one under Settings, API Tokens on [www.iminify.com](https://www.iminify.com). The account needs a verified email address.
+You also need an API key: [make one](https://www.iminify.com/docs/authentication#creating-a-key) under Settings, API Tokens on www.iminify.com. The account needs a verified email address.
 
 ## Quick start
 
@@ -61,6 +61,7 @@ Compressions and scans count against the same daily and per-minute limits as the
 - [Upload groups](./usage/upload-groups.md) make every size and format a site keeps of an image, counted as one image.
 - [Page scans](./usage/page-scans.md), [site crawls](./usage/site-crawls.md) and [weekly checks](./usage/weekly-checks.md) find and compress the images a site already serves.
 - [Spatie's image packages](./integrations/spatie.md) get an optimizer that works in place of their command-line tools.
+- [AI coding assistants](./integrations/ai-assistants.md) can read these docs as they write code against the client.
 - [Error handling](./reference/error-handling.md) lists every exception, and [testing](./reference/testing.md) shows the fake.
 
 The API's own reference, with every field and error code, is at [www.iminify.com/docs](https://www.iminify.com/docs).

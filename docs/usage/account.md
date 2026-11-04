@@ -3,7 +3,7 @@ title: Account
 weight: 6
 ---
 
-`$client->account()->get()` reads the key's account: its plan, what the plan allows, and how much of today's allowance is gone.
+`$client->account()->get()` reads the key's account: its plan, what the plan allows, and how much of today's allowance is gone. Each field is described in the API's [account object](https://www.iminify.com/docs/account#the-account-object).
 
 ```php
 use Mozex\Iminify\Enums\Plan;

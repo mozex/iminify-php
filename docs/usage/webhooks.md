@@ -3,7 +3,7 @@ title: Webhooks
 weight: 7
 ---
 
-Webhooks come with a paid plan and are set up on the website, under Settings, Webhooks: Iminify sends a signed request to your address when an image or a page scan finishes, so you don't have to poll. `WebhookVerifier` checks that a request came from Iminify and reads its event.
+Webhooks come with a paid plan and are set up on the website, under Settings, Webhooks: Iminify sends a signed request to your address when an image or a page scan finishes, so you don't have to poll. `WebhookVerifier` [checks the signature](https://www.iminify.com/docs/webhooks#checking-the-signature) that proves a request came from Iminify, and reads its event.
 
 Hand it the raw request body, before any JSON parsing changes it, and the `Iminify-Signature` header, whose name is in `WebhookVerifier::HEADER`:
 
