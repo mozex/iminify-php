@@ -12,6 +12,8 @@ The PHP client for the [Iminify](https://www.iminify.com) image optimization API
 
 > **[Read the full documentation at www.iminify.com](https://www.iminify.com/docs/php)**: every guide and reference page, updated with each release.
 
+> **Using Laravel?** [Iminify Laravel](https://www.iminify.com/docs/laravel) puts this client in your app's container behind an `Iminify` facade, and plugs Iminify into Spatie's Media Library and laravel-image-optimizer.
+
 ## Table of Contents
 
 - [Introduction](https://www.iminify.com/docs/php)

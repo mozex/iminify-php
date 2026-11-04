@@ -5,6 +5,8 @@ weight: 0
 
 Iminify PHP is the PHP client for the [Iminify](https://www.iminify.com) image optimization API. It sends an image, waits for the result and saves the smaller file in a few lines of code, and it covers the rest of the API too: upload groups, page scans, site crawls, weekly site checks, your account and webhook signatures. It also ships an optimizer for Spatie's image packages.
 
+> **Using Laravel?** [Iminify Laravel](https://www.iminify.com/docs/laravel) puts this client in your app's container behind an `Iminify` facade, and plugs Iminify into Spatie's Media Library and laravel-image-optimizer.
+
 ## What you get
 
 The API works in the background, so every long-running record has a `wait()` that backs off between reads, waits out a short rate limit and stops at the timeout you give it.
