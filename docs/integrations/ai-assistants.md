@@ -3,7 +3,7 @@ title: AI coding assistants
 weight: 2
 ---
 
-An AI coding assistant writes better code against this client when it reads these docs instead of guessing from what it remembers. They're published on Context7 as [mozex/iminify-php](https://context7.com/mozex/iminify-php), built from this repository's README and `docs/` folder, so they follow each release.
+An AI coding assistant writes better code against this client when it reads these docs instead of guessing from what it remembers. They're on Context7 as [mozex/iminify-php](https://context7.com/mozex/iminify-php), which indexes this repository's README and `docs/` folder.
 
 ## Context7
 
