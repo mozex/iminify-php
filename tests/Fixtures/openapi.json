@@ -6758,6 +6758,7 @@
                                         "files": 6,
                                         "outputs": [],
                                         "alt_text": null,
+                                        "content_credentials": null,
                                         "download_url": null,
                                         "created_at": "2026-10-01T09:40:00+00:00",
                                         "received_at": null
@@ -7051,6 +7052,9 @@
                                             "text": null,
                                             "language": "en",
                                             "suggested_name": null
+                                        },
+                                        "content_credentials": {
+                                            "generative_ai": false
                                         },
                                         "download_url": null,
                                         "created_at": "2026-10-01T09:40:00+00:00",
@@ -7375,6 +7379,9 @@
                                             "text": "A red tram crossing a stone bridge at dusk",
                                             "language": "en",
                                             "suggested_name": "red-tram-stone-bridge-dusk"
+                                        },
+                                        "content_credentials": {
+                                            "generative_ai": false
                                         },
                                         "download_url": "https://www.iminify.com/api/v1/groups/9d3c5c02-4e1f-4a6b-8d2c-3f5a7b9c1e24/download",
                                         "created_at": "2026-10-01T09:40:00+00:00",
@@ -11073,6 +11080,22 @@
                             "suggested_name"
                         ]
                     },
+                    "content_credentials": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "The Content Credentials the source carried, a signed C2PA record of where the image came from, or `null` when it carried none, and until an output has finished. Every file made from the source leaves them out, since any new file breaks their signature; an output handed back as the source itself (`already-optimized`) keeps them. See [Content Credentials](/docs/compression-settings#content-credentials).",
+                        "properties": {
+                            "generative_ai": {
+                                "type": "boolean",
+                                "description": "Whether they say generative AI made the image, wholly or in part. Iminify reads what they state and doesn't check their signature."
+                            }
+                        },
+                        "required": [
+                            "generative_ai"
+                        ]
+                    },
                     "download_url": {
                         "type": [
                             "string",
@@ -11105,6 +11128,7 @@
                     "files",
                     "outputs",
                     "alt_text",
+                    "content_credentials",
                     "download_url",
                     "created_at",
                     "received_at"
@@ -12142,27 +12166,19 @@
                         "description": "The page's largest contentful paint (LCP): the biggest thing in the first screen, which is when a visitor sees the page as loaded. `null` when it could not be measured.",
                         "properties": {
                             "kind": {
-                                "type": "string",
-                                "description": "`image` (a picture or a background), `text`, or `none` when the page painted nothing.",
-                                "enum": [
-                                    "image",
-                                    "text",
-                                    "none"
-                                ]
+                                "type": "string"
                             },
                             "element": {
                                 "type": [
                                     "string",
                                     "null"
-                                ],
-                                "description": "The element's tag, such as `img`, `h1` or `div`."
+                                ]
                             },
                             "url": {
                                 "type": [
                                     "string",
                                     "null"
-                                ],
-                                "description": "The image's address, when it is one. The image's own entry in `images` says `largest_paint: true`."
+                                ]
                             }
                         },
                         "required": [
@@ -13089,6 +13105,7 @@
                             "pro_required",
                             "site_key_not_allowed",
                             "site_key_required",
+                            "network_required",
                             "not_found",
                             "method_not_allowed",
                             "image_in_progress",
@@ -13106,6 +13123,8 @@
                             "report_not_available",
                             "group_closed",
                             "site_moved",
+                            "network_full",
+                            "site_connected_elsewhere",
                             "pairing_pending",
                             "uploads_waiting",
                             "pairing_closed",
@@ -13119,6 +13138,8 @@
                             "start_failed",
                             "delete_failed",
                             "download_failed",
+                            "audit_off_site",
+                            "site_alt_text_off",
                             "alt_text_not_available",
                             "http_error"
                         ]
@@ -13148,6 +13169,7 @@
                             "pro_required",
                             "site_key_not_allowed",
                             "site_key_required",
+                            "network_required",
                             "not_found",
                             "method_not_allowed",
                             "image_in_progress",
@@ -13165,6 +13187,8 @@
                             "report_not_available",
                             "group_closed",
                             "site_moved",
+                            "network_full",
+                            "site_connected_elsewhere",
                             "pairing_pending",
                             "uploads_waiting",
                             "pairing_closed",
@@ -13178,6 +13202,8 @@
                             "start_failed",
                             "delete_failed",
                             "download_failed",
+                            "audit_off_site",
+                            "site_alt_text_off",
                             "alt_text_not_available",
                             "http_error"
                         ]

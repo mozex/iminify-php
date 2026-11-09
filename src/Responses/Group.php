@@ -19,6 +19,7 @@ class Group
      * @param  list<GroupOutput>  $outputs  empty until the source arrives
      * @param  string|null  $downloadUrl  the zip's address, once the group has finished; it needs your key
      * @param  array<array-key, mixed>  $attributes  the answer as the API sent it
+     * @param  SourceCredentials|null  $contentCredentials  what the source carried, or null when it carried none or no file has finished yet
      */
     public function __construct(
         public readonly string $id,
@@ -35,6 +36,7 @@ class Group
         public readonly ?DateTimeImmutable $receivedAt,
         public readonly RateLimit $rateLimit,
         protected readonly array $attributes,
+        public readonly ?SourceCredentials $contentCredentials = null,
     ) {}
 
     /**
@@ -57,6 +59,7 @@ class Group
             isset($attributes['received_at']) ? Read::date($attributes['received_at']) : null,
             $rateLimit ?? new RateLimit,
             $attributes,
+            isset($attributes['content_credentials']) ? SourceCredentials::from($attributes['content_credentials']) : null,
         );
     }
 

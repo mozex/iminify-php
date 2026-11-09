@@ -59,3 +59,5 @@ $client->groups()->delete($group);
 `wait()` reads only while the group is `in_progress`, so on a group still waiting for its image it returns at once: nothing but `sendSource()` moves it on.
 
 The zip holds every output marked `replace`, meaning smaller than the size you told it you already have, with a `manifest.csv` of every output. `$group->isInProgress()` and `$group->isFinished()` say where it stands, and `$client->groups()->get($id)` reads one by its id.
+
+`$group->contentCredentials` is set once a file has finished when your image carried [Content Credentials](https://www.iminify.com/docs/compression-settings#content-credentials), and `null` when it carried none. Every file made from it leaves them out, so the ones you write over your copies have none; `$group->contentCredentials->generativeAi` says whether they state that generative AI made the image.

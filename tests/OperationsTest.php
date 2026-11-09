@@ -42,6 +42,7 @@ use Mozex\Iminify\Responses\ResponsiveSet;
 use Mozex\Iminify\Responses\Scan;
 use Mozex\Iminify\Responses\ScanAudit;
 use Mozex\Iminify\Responses\SkippedImage;
+use Mozex\Iminify\Responses\SourceCredentials;
 use Mozex\Iminify\Responses\Usage;
 use Mozex\Iminify\Tests\Fakes\RecordingHttpClient;
 
@@ -200,6 +201,7 @@ describe('what the client reads', function () {
         [AuditFindings::class, ['CrawlAudit', 'properties', 'findings']],
         [Monitor::class, ['Monitor']],
         [Group::class, ['Group']],
+        [SourceCredentials::class, ['Group', 'properties', 'content_credentials']],
         [GroupSource::class, ['Group', 'properties', 'source']],
         [GroupSettings::class, ['Group', 'properties', 'settings']],
         [GroupOutput::class, ['GroupOutput']],

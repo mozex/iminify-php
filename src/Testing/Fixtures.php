@@ -581,6 +581,9 @@ class Fixtures
                 'language' => 'en',
                 'suggested_name' => 'red-tram-stone-bridge-dusk',
             ],
+            'content_credentials' => [
+                'generative_ai' => false,
+            ],
             'download_url' => 'https://www.iminify.com/api/v1/groups/9d3c5c02-4e1f-4a6b-8d2c-3f5a7b9c1e24/download',
             'created_at' => '2026-10-01T09:40:00+00:00',
             'received_at' => '2026-10-01T09:40:21+00:00',
@@ -619,6 +622,7 @@ class Fixtures
             'files' => 6,
             'outputs' => [],
             'alt_text' => null,
+            'content_credentials' => null,
             'download_url' => null,
             'created_at' => '2026-10-01T09:40:00+00:00',
             'received_at' => null,
@@ -722,6 +726,9 @@ class Fixtures
                 'text' => null,
                 'language' => 'en',
                 'suggested_name' => null,
+            ],
+            'content_credentials' => [
+                'generative_ai' => false,
             ],
             'download_url' => null,
             'created_at' => '2026-10-01T09:40:00+00:00',
