@@ -2,6 +2,14 @@
 
 All notable changes to `iminify-php` will be documented in this file.
 
+## 1.1.1 - 2026-11-11
+
+### What's Changed
+
+* The images guide says that `AlreadyOptimized` now has a second reason: the file you sent is one Iminify made at Smart or Ultra, sent back at that level with no resize, other format or size limit it's over, so it comes back as it is instead of losing quality a second time. Nothing in the client's code changed.
+
+**Full Changelog**: https://github.com/mozex/iminify-php/compare/1.1.0...1.1.1
+
 ## 1.1.0 - 2026-11-11
 
 ### What's Changed
