@@ -2,6 +2,15 @@
 
 All notable changes to `iminify-php` will be documented in this file.
 
+## 1.1.0 - 2026-11-11
+
+### What's Changed
+
+* `$group->contentCredentials` says whether an upload group's source carried [Content Credentials](https://www.iminify.com/docs/compression-settings#content-credentials), and `$group->contentCredentials->generativeAi` whether they state that generative AI made the image. It's `null` when the source carried none, and until a file has finished. The files Iminify makes from the source leave them out, so the copies you write over yours carry none.
+* `Fixtures` answers a finished group with `content_credentials` set, so a test can read the field through `FakeClient`.
+
+**Full Changelog**: https://github.com/mozex/iminify-php/compare/1.0.0...1.1.0
+
 ## 1.0.0 - 2026-11-04
 
 ### What's Changed
