@@ -10571,7 +10571,7 @@
             },
             "ContentCredentialsStatus": {
                 "type": "string",
-                "description": "What became of the Content Credentials the upload carried. `removed`: the optimized copy doesn't carry them. Their signature covers the upload's exact bytes, so any change to the file breaks it, and Iminify doesn't sign a new record of its own. `kept`: nothing came out smaller, so the optimized copy is the upload itself, credentials and all.\n",
+                "description": "What became of the Content Credentials the upload carried. `removed`: the optimized copy doesn't carry them. Their signature covers the upload's exact bytes, so any change to the file breaks it, and Iminify doesn't sign a new record of its own. `kept`: the optimized copy is the upload itself, credentials and all, because nothing came out smaller or the upload was handed back unchanged.\n",
                 "enum": [
                     "removed",
                     "kept"
@@ -11157,7 +11157,7 @@
                         "$ref": "#/components/schemas/GroupFormat"
                     },
                     "status": {
-                        "description": "Where this file is: `queued`, `optimizing`, `completed`, `already-optimized` (nothing came out smaller than the source, which is handed back), `failed` or `cancelled`.",
+                        "description": "Where this file is: `queued`, `optimizing`, `completed`, `already-optimized` (the source handed back, because nothing came out smaller or because it is a file Iminify made), `failed` or `cancelled`.",
                         "$ref": "#/components/schemas/CompressStatus"
                     },
                     "file": {
@@ -11225,7 +11225,7 @@
                         "description": "The image's id."
                     },
                     "status": {
-                        "description": "Where the image is. `queued`: waiting for a worker. `optimizing`: being compressed. `completed`: finished, the optimized copy is ready. `already-optimized`: finished, but nothing came out smaller than the upload, so the upload itself is handed back as the optimized copy. `failed`: it could not be compressed. `cancelled`: called off before it started.",
+                        "description": "Where the image is. `queued`: waiting for a worker. `optimizing`: being compressed. `completed`: finished, the optimized copy is ready. `already-optimized`: finished, and the upload itself is handed back as the optimized copy, because nothing came out smaller or because it is a file Iminify made at Smart or Ultra, sent again at that level (or at Smart, for a file made at Ultra) with no resize, no other format and no size limit it is over. `failed`: it could not be compressed. `cancelled`: called off before it started.",
                         "$ref": "#/components/schemas/CompressStatus"
                     },
                     "name": {

@@ -101,7 +101,7 @@ $image->responsive?->html;     // the <img srcset> to copy
 $image->toArray();             // the response as the API sent it
 ```
 
-`AlreadyOptimized` means Iminify couldn't make the file smaller and hands the upload back, so `hasResult()` is true and the download is your own file.
+`AlreadyOptimized` means Iminify hands the upload back, because it couldn't make the file smaller or because the file is one Iminify made itself, so `hasResult()` is true and the download is your own file.
 
 ## Downloading
 
